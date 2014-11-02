@@ -1,84 +1,260 @@
 package imap_server
 
 import (
+	"io/ioutil"
+	"net/textproto"
 	"os"
+	"regexp"
 	"testing"
 )
 
-type expectTest struct {
-	testName          string
-	injectState       func(*Conn)
-	commands          []string
-	expectedResponses []string
+func getUser() DummyUser {
+	return DummyUser{authenticated: true}
 }
 
-func state(state ConnState) func(server *Conn) {
-	return func(server *Conn) {
-		server.setState(state)
+func getInbox() DummyMailbox {
+	return DummyMailbox{name: "INBOX"}
+}
+
+type rig struct {
+	cConn  *textproto.Conn
+	sConn  *Conn
+	server *Server
+}
+
+func (r *rig) expect(t *testing.T, expected string) {
+	line, err := r.cConn.ReadLine()
+	if err != nil {
+		t.Fatalf("Error reading line: %s", err)
+		return
+	}
+	if line != expected {
+		t.Fatalf("Response did not match:\nExpected: %s\nActual:   %s", expected, line)
+		return
 	}
 }
 
-var expectTests = []expectTest{
-	{"Should send welcome message on connection init", nil, nil, []string{"* OK IMAP4rev1 Service Ready"}},
+func (r *rig) expectPattern(t *testing.T, pattern string) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		t.Fatalf("Could not compile pattern: %s\n", pattern)
+		return
+	}
 
-	{"Should send capabilities", state(StateNotAuthenticated),
-		[]string{"abcd CAPABILITY"},
-		[]string{"* CAPABILITY IMAP4rev1 AUTH=PLAIN",
-			"abcd OK CAPABILITY completed"}},
-
-	{"Should login", state(StateNotAuthenticated),
-		[]string{"efgh LOGIN test test"},
-		[]string{"efgh OK LOGIN COMPLETED"}},
-
-	{"Should not login with incorrect password", state(StateNotAuthenticated),
-		[]string{"efgh LOGIN test bad"},
-		[]string{"efgh NO Incorrect username or password"}},
-	/*
-		**** TLS not implemented yet
-		{"Should send capabilities when not in tls", state(StateNotAuthenticated),
-			[]string{"abcd CAPABILITY"},
-			[]string{"* CAPABILITY IMAP4rev1 STARTTLS LOGINDISABLED",
-				"abcd OK CAPABILITY completed"}},
-
-		{"Should send capabilities when in TLS mode", state(StateNotAuthenticated),
-			[]string{"abcd CAPABILITY"},
-			[]string{"* CAPABILITY IMAP4rev1 AUTH=PLAIN",
-				"abcd OK CAPABILITY completed"}},
-	*/
+	line, err := r.cConn.ReadLine()
+	if err != nil {
+		t.Fatalf("Error reading line: %s", err)
+		return
+	}
+	if re.MatchString(line) == false {
+		t.Fatalf("Response did not match pattern:\nExpected: %s\nActual:   %s", pattern, line)
+		return
+	}
 }
 
-// Inject state into the server, send a command, then expect a particular response
-func TestExpectedResponses(t *testing.T) {
-	for _, test := range expectTests {
-		func(test expectTest) {
-			_, cConn, sConn, server, err := NewTestConnection()
-			defer server.Close()
-
-			sConn.Transcript = os.Stdout
-			if err != nil {
-				t.Errorf("Error creating test connection: %s", err)
-				return
-			}
-			if test.injectState != nil {
-				test.injectState(sConn)
-			}
-			go sConn.Start()
-			if test.commands != nil {
-				for _, cmd := range test.commands {
-					cConn.PrintfLine("%s", cmd)
-				}
-			}
-			for _, expectedResponse := range test.expectedResponses {
-				line, err := cConn.ReadLine()
-				if err != nil {
-					t.Errorf("Error reading line: %s", err)
-					return
-				}
-				if line != expectedResponse {
-					t.Errorf("Actual response did not match expected:\n%s", expectedResponse)
-					return
-				}
-			}
-		}(test)
+func setup(t *testing.T) rig {
+	transcript := ioutil.Discard
+	if testing.Verbose() {
+		transcript = os.Stdout
 	}
+	_, cConn, sConn, server, err := NewTestConnection(transcript)
+	if err != nil {
+		t.Errorf("Error creating test connection: %s", err)
+		return rig{}
+	}
+	return rig{
+		sConn:  sConn,
+		cConn:  cConn,
+		server: server,
+	}
+}
+
+func (r *rig) cleanup() {
+	r.cConn.Close()
+	r.sConn.Close()
+	r.server.Close()
+}
+
+func TestWelcomeMessage(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	go r.sConn.Start()
+	//cConn.PrintfLine("%s", cmd)
+	r.expect(t, "* OK IMAP4rev1 Service Ready")
+}
+
+func TestCapabilities(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateNotAuthenticated)
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 CAPABILITY")
+	r.expect(t, "* CAPABILITY IMAP4rev1 AUTH=PLAIN")
+	r.expect(t, "abcd.123 OK CAPABILITY completed")
+}
+
+func TestSelect(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 SELECT INBOX")
+	r.expect(t, "* 1 EXISTS")
+	r.expect(t, "* 1 RECENT")
+	r.expect(t, "* OK [UNSEEN 1]")
+	r.expect(t, "* OK [UIDNEXT 2]")
+	r.expect(t, "* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)")
+}
+
+func TestStatus(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 STATUS INBOX (UIDNEXT UNSEEN)")
+	r.expect(t, "* STATUS INBOX (UIDNEXT 2 UNSEEN 1)")
+	r.expect(t, "abcd.123 OK STATUS Completed")
+}
+
+func TestFetchFlagsUid(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (FLAGS UID)")
+	r.expect(t, "* 1 FETCH (FLAGS (\\Recent) UID 1)")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchHeader(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER])")
+	r.expect(t, "* 1 FETCH (BODY[HEADER] {112}")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "")
+	r.expect(t, ")")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchSpecificHeaders(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER.FIELDS (From Subject)])")
+	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (From Subject)] {55}")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "")
+	r.expect(t, ")")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchPeekSpecificHeaders(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY.PEEK[HEADER.FIELDS (from Subject x-priority)])")
+	r.expect(t, "* 1 FETCH (BODY.PEEK[HEADER.FIELDS (from Subject x-priority)] {55}")
+	r.expectPattern(t, "^((subject)|(from)): [A-z0-9\\s@\\.]+$")
+	r.expectPattern(t, "^((subject)|(from)): [A-z0-9\\s@\\.]+$")
+	r.expect(t, "")
+	r.expect(t, ")")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchInternalDate(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (INTERNALDATE)")
+	r.expect(t, "* 1 FETCH (INTERNALDATE \"Tue, 28 Oct 2014 00:09:00 +0700\")")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchRFC822Size(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (RFC822.SIZE)")
+	r.expect(t, "* 1 FETCH (RFC822.SIZE 158)")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchBodyOnly(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[TEXT])")
+	r.expect(t, "* 1 FETCH (BODY[TEXT] {54}")
+	r.expect(t, "This is the body of the email.")
+	r.expect(t, "It is a short email")
+	r.expect(t, ")")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchFullMessage(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[])")
+	r.expect(t, "* 1 FETCH (BODY[] {164}")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "")
+	r.expect(t, "This is the body of the email.")
+	r.expect(t, "It is a short email")
+	r.expect(t, ")")
+	r.expect(t, "abcd.123 OK FETCH Completed")
+}
+
+func TestFetchFullMessageByUid(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	r.sConn.selectedMailbox = getInbox()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 UID FETCH 1 (BODY[])")
+	r.expect(t, "* 1 FETCH (UID 1 BODY[] {164}")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "")
+	r.expect(t, "This is the body of the email.")
+	r.expect(t, "It is a short email")
+	r.expect(t, ")")
+	r.expect(t, "abcd.123 OK UID FETCH Completed")
 }

@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"strings"
-	"time"
 )
 
 type ConnState int
@@ -24,11 +23,13 @@ const lineEnding string = "\r\n"
 
 // Represents a client connection to the IMAP server
 type Conn struct {
-	state      ConnState
-	srv        *Server // Pointer to the IMAP server to which this connection belongs
-	rwc        net.Conn
-	Transcript io.Writer
-	recvReq    chan string
+	state           ConnState
+	srv             *Server // Pointer to the IMAP server to which this connection belongs
+	rwc             net.Conn
+	Transcript      io.Writer
+	recvReq         chan string
+	user            User
+	selectedMailbox Mailbox
 }
 
 func (c *Conn) setState(state ConnState) {
@@ -36,8 +37,7 @@ func (c *Conn) setState(state ConnState) {
 }
 
 func (c *Conn) handleRequest(req string) {
-	time.Sleep(2 * time.Second)
-	for _, cmd := range c.srv.commands {
+	for _, cmd := range commands {
 		matches := cmd.match.FindStringSubmatch(req)
 		if len(matches) > 0 {
 			cmd.handler(matches, c)
@@ -46,6 +46,12 @@ func (c *Conn) handleRequest(req string) {
 	}
 
 	c.writeResponse("", "BAD Command not understood")
+}
+
+func (c *Conn) Write(p []byte) (n int, err error) {
+	fmt.Fprintf(c.Transcript, "S: %s", p)
+
+	return c.rwc.Write(p)
 }
 
 // Write a response to the client
@@ -57,10 +63,7 @@ func (c *Conn) writeResponse(seq string, command string) {
 	if !strings.HasSuffix(command, lineEnding) {
 		command += lineEnding
 	}
-	fmt.Fprintf(c.rwc, "%s %s", seq, command)
-	if c.Transcript != nil {
-		fmt.Fprintf(c.Transcript, "S: %s %s", seq, command)
-	}
+	fmt.Fprintf(c, "%s %s", seq, command)
 }
 
 // Send the server greeting to the client
@@ -74,7 +77,7 @@ func (c *Conn) sendWelcome() error {
 }
 
 func (c *Conn) Close() error {
-	fmt.Printf("Server closing connection\n")
+	fmt.Fprintf(c.Transcript, "Server closing connection\n")
 	return c.rwc.Close()
 }
 
@@ -89,10 +92,9 @@ func (c *Conn) Start() error {
 		scanner := bufio.NewScanner(c.rwc)
 		for ok := scanner.Scan(); ok == true; ok = scanner.Scan() {
 			text := scanner.Text()
-			fmt.Printf("Scanned %s\n", text)
 			ch <- text
 		}
-		fmt.Printf("End of input?\n")
+		fmt.Fprintf(c.Transcript, "Client ended connection\n")
 		close(ch)
 
 	}(c.recvReq)
@@ -109,9 +111,7 @@ func (c *Conn) Start() error {
 			if ok == false {
 				return nil
 			}
-			if c.Transcript != nil {
-				fmt.Fprintf(c.Transcript, "C: %s\n", req)
-			}
+			fmt.Fprintf(c.Transcript, "C: %s\n", req)
 			c.handleRequest(req)
 		}
 	}

@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-	s := imap_server.NewServer()
+	store := imap_server.NewDummyMailstore()
+	s := imap_server.NewServer(store)
 	s.Transcript = os.Stdout
 	s.Addr = ":10143"
 
