@@ -36,16 +36,16 @@ func init() {
 	commands = make([]command, 0)
 
 	registerCommand("CAPABILITY", cmdCapability)
-	registerCommand("LOGIN ([A-z0-9]+) ([A-z0-9]+)", cmdNA)
+	registerCommand("LOGIN \"([A-z0-9]+)\" \"([A-z0-9]+)\"", cmdLogin)
 	registerCommand("AUTHENTICATE PLAIN", cmdAuthPlain)
 	registerCommand("LIST", cmdList)
 	registerCommand("LSUB", cmdLSub)
 	registerCommand("LOGOUT", cmdLogout)
 	registerCommand("NOOP", cmdNoop)
 	registerCommand("CLOSE", cmdClose)
-	registerCommand("SELECT ([A-z0-9]+)", cmdSelect)
-	registerCommand("EXAMINE ([A-z0-9]+)", cmdExamine)
-	registerCommand("STATUS ([A-z0-9]+) \\(([A-z\\s]+)\\)", cmdStatus)
+	registerCommand("SELECT \"?([A-z0-9]+)\"?", cmdSelect)
+	registerCommand("EXAMINE \"?([A-z0-9]+)\"?", cmdExamine)
+	registerCommand("STATUS \"?([A-z0-9]+)\"? \\(([A-z\\s]+)\\)", cmdStatus)
 	registerCommand("(UID )?FETCH (?:(\\d+)(?:\\:([\\*\\d]+))?) \\(([A-z0-9\\s\\(\\)\\[\\]\\.-]+)\\)", cmdFetch)
 }
 
@@ -63,11 +63,6 @@ func registerCommand(matchExpr string, handleFunc func(commandArgs, *Conn)) erro
 func cmdCapability(args commandArgs, c *Conn) {
 	c.writeResponse("", "CAPABILITY IMAP4rev1 AUTH=PLAIN")
 	c.writeResponse(args.Id(), "OK CAPABILITY completed")
-}
-
-// Handles a LOGIN command
-func cmdLogin(args commandArgs, c *Conn) {
-	c.writeResponse("", "BAD Not implemented")
 }
 
 // Handles PLAIN text AUTHENTICATE command
@@ -92,6 +87,18 @@ func cmdAuthPlain(args commandArgs, c *Conn) {
 		return
 	}
 	c.user, err = c.srv.mailstore.Authenticate(string(match[1]), string(match[2]))
+	if err != nil {
+		c.writeResponse(args.Id(), "NO Incorrect username/password")
+		return
+	}
+	c.setState(StateAuthenticated)
+	c.writeResponse(args.Id(), "OK Authenticated")
+}
+
+// Handles PLAIN text LOGIN command
+func cmdLogin(args commandArgs, c *Conn) {
+	user, err := c.srv.mailstore.Authenticate(args.Arg(0), args.Arg(1))
+	c.user = user
 	if err != nil {
 		c.writeResponse(args.Id(), "NO Incorrect username/password")
 		return
@@ -192,7 +199,6 @@ func cmdFetch(args commandArgs, c *Conn) {
 	}
 
 	uidRE := regexp.MustCompile("UID")
-	flagsRE := regexp.MustCompile("FLAGS")
 	internalDateRE := regexp.MustCompile("INTERNALDATE")
 	sizeRE := regexp.MustCompile("RFC822\\.SIZE")
 	headersRE := regexp.MustCompile("BODY(?:\\.PEEK)?\\[HEADER\\]")
@@ -210,13 +216,6 @@ func cmdFetch(args commandArgs, c *Conn) {
 	}
 
 	reply := make([]string, 0)
-
-	// Did the client request the message flags?
-	if flagsRE.MatchString(partsRequested) {
-		flags := append(messageFlags(msg), msg.Keywords()...)
-		flagList := strings.Join(flags, " ")
-		reply = append(reply, fmt.Sprintf("FLAGS (%s)", flagList))
-	}
 
 	// Did the client request the message UID?
 	if uidRE.MatchString(partsRequested) || searchByUid {
