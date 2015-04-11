@@ -6,10 +6,27 @@ import (
 	"time"
 )
 
-type DummyMailstore struct{}
+type DummyMailstore struct {
+	user DummyUser
+}
+
+func newDummyMailbox(name string) DummyMailbox {
+	return DummyMailbox{
+		name:     name,
+		messages: make([]Message, 0),
+	}
+}
 
 func NewDummyMailstore() DummyMailstore {
-	return DummyMailstore{}
+	ms := DummyMailstore{
+		user: DummyUser{
+			authenticated: false,
+			mailboxes:     make(map[string]DummyMailbox),
+		},
+	}
+	ms.user.mailboxes["INBOX"] = newDummyMailbox("INBOX")
+	ms.user.mailboxes["Trash"] = newDummyMailbox("Trash")
+	return ms
 }
 
 func (d DummyMailstore) Authenticate(username string, password string) (User, error) {
@@ -26,23 +43,31 @@ func (d DummyMailstore) Authenticate(username string, password string) (User, er
 
 type DummyUser struct {
 	authenticated bool
+	mailboxes     map[string]DummyMailbox
 }
 
 func (u DummyUser) Mailboxes() []Mailbox {
-	mailboxes := make([]Mailbox, 1)
-	mailboxes[0] = DummyMailbox{name: "INBOX"}
+	mailboxes := make([]Mailbox, len(u.mailboxes))
+	index := 0
+	for _, element := range u.mailboxes {
+		mailboxes[index] = element
+		index++
+	}
 	return mailboxes
 }
 
 func (u DummyUser) MailboxByName(name string) (Mailbox, error) {
-	if name == "INBOX" {
-		return DummyMailbox{name: "INBOX"}, nil
+	for _, mailbox := range u.mailboxes {
+		if mailbox.Name() == name {
+			return mailbox, nil
+		}
 	}
 	return DummyMailbox{}, errors.New("Invalid mailbox")
 }
 
 type DummyMailbox struct {
-	name string
+	name     string
+	messages []Message
 }
 
 func (m DummyMailbox) Name() string   { return m.name }
@@ -88,10 +113,11 @@ type DummyMessage struct {
 
 func (m DummyMessage) Header() (hdr MIMEHeader) {
 	hdr = make(map[string]string)
-	hdr["date"] = "Mon, 27 Oct 2014 13:45:00 +1000"
-	hdr["to"] = "you@test.com"
-	hdr["from"] = "me@test.com"
-	hdr["subject"] = "This is a dummy email"
+	hdr["Date"] = "Mon, 27 Oct 2014 13:45:00 +1000"
+	hdr["To"] = "you@test.com"
+	hdr["From"] = "me@test.com"
+	hdr["Subject"] = "This is a dummy email"
+	hdr["Message-ID"] = "<123456@test.com>"
 	return hdr
 }
 

@@ -83,6 +83,29 @@ func TestWelcomeMessage(t *testing.T) {
 	r.expect(t, "* OK IMAP4rev1 Service Ready")
 }
 
+func TestListDirectorySeparator(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 LIST \"\" \"\"")
+	r.expect(t, "* LIST (\\Noselect) \"/\" \"\"")
+	r.expect(t, "abcd.123 OK LIST completed")
+}
+
+func TestListAllMailboxes(t *testing.T) {
+	r := setup(t)
+	defer r.cleanup()
+	r.sConn.setState(StateAuthenticated)
+	r.sConn.user = getUser()
+	go r.sConn.Start()
+	r.cConn.PrintfLine("abcd.123 LIST \"\" \"*\"")
+	r.expect(t, "* LIST () \"/\" \"INBOX\"")
+	r.expect(t, "* LIST () \"/\" \"Trash\"")
+	r.expect(t, "abcd.123 OK LIST completed")
+}
+
 func TestCapabilities(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
@@ -104,6 +127,7 @@ func TestSelect(t *testing.T) {
 	r.expect(t, "* 1 RECENT")
 	r.expect(t, "* OK [UNSEEN 1]")
 	r.expect(t, "* OK [UIDNEXT 2]")
+	r.expect(t, "* OK [UIDVALIDITY 250]")
 	r.expect(t, "* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)")
 }
 
@@ -128,6 +152,11 @@ func TestFetchFlagsUid(t *testing.T) {
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (FLAGS UID)")
 	r.expect(t, "* 1 FETCH (FLAGS (\\Recent) UID 1)")
 	r.expect(t, "abcd.123 OK FETCH Completed")
+
+	// Command case insensitivity
+	r.cConn.PrintfLine("abcd.124 fetch 1 (FLAGS)")
+	r.expect(t, "* 1 FETCH (FLAGS (\\Recent))")
+	r.expect(t, "abcd.124 OK FETCH Completed")
 }
 
 func TestFetchHeader(t *testing.T) {
@@ -138,11 +167,12 @@ func TestFetchHeader(t *testing.T) {
 	r.sConn.selectedMailbox = getInbox()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER] {112}")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "* 1 FETCH (BODY[HEADER] {143}")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expect(t, "")
 	r.expect(t, ")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
@@ -156,9 +186,9 @@ func TestFetchSpecificHeaders(t *testing.T) {
 	r.sConn.selectedMailbox = getInbox()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER.FIELDS (From Subject)])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (From Subject)] {55}")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"From\" \"Subject\")] {55}")
+	r.expectPattern(t, "^((?i)(subject)|(from)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(from)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expect(t, "")
 	r.expect(t, ")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
@@ -172,9 +202,9 @@ func TestFetchPeekSpecificHeaders(t *testing.T) {
 	r.sConn.selectedMailbox = getInbox()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY.PEEK[HEADER.FIELDS (from Subject x-priority)])")
-	r.expect(t, "* 1 FETCH (BODY.PEEK[HEADER.FIELDS (from Subject x-priority)] {55}")
-	r.expectPattern(t, "^((subject)|(from)): [A-z0-9\\s@\\.]+$")
-	r.expectPattern(t, "^((subject)|(from)): [A-z0-9\\s@\\.]+$")
+	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"from\" \"Subject\" \"x-priority\")] {55}")
+	r.expectPattern(t, "^((?i)(subject)|(from)): [A-z0-9\\s@\\.]+$")
+	r.expectPattern(t, "^((?i)(subject)|(from)): [A-z0-9\\s@\\.]+$")
 	r.expect(t, "")
 	r.expect(t, ")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
@@ -188,7 +218,7 @@ func TestFetchInternalDate(t *testing.T) {
 	r.sConn.selectedMailbox = getInbox()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (INTERNALDATE)")
-	r.expect(t, "* 1 FETCH (INTERNALDATE \"Tue, 28 Oct 2014 00:09:00 +0700\")")
+	r.expect(t, "* 1 FETCH (INTERNALDATE \"28-Oct-2014 00:09:00 +0700\")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
 
@@ -200,7 +230,7 @@ func TestFetchRFC822Size(t *testing.T) {
 	r.sConn.selectedMailbox = getInbox()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (RFC822.SIZE)")
-	r.expect(t, "* 1 FETCH (RFC822.SIZE 158)")
+	r.expect(t, "* 1 FETCH (RFC822.SIZE 189)")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
 
@@ -227,11 +257,12 @@ func TestFetchFullMessage(t *testing.T) {
 	r.sConn.selectedMailbox = getInbox()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[])")
-	r.expect(t, "* 1 FETCH (BODY[] {164}")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "* 1 FETCH (BODY[] {195}")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expect(t, "")
 	r.expect(t, "This is the body of the email.")
 	r.expect(t, "It is a short email")
@@ -247,14 +278,15 @@ func TestFetchFullMessageByUid(t *testing.T) {
 	r.sConn.selectedMailbox = getInbox()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 UID FETCH 1 (BODY[])")
-	r.expect(t, "* 1 FETCH (UID 1 BODY[] {164}")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((subject)|(to)|(from)|(date)): [A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expect(t, "* 1 FETCH (BODY[] {195}")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
+	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expect(t, "")
 	r.expect(t, "This is the body of the email.")
 	r.expect(t, "It is a short email")
-	r.expect(t, ")")
+	r.expect(t, " UID 1)")
 	r.expect(t, "abcd.123 OK UID FETCH Completed")
 }

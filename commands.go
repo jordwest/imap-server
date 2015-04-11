@@ -35,18 +35,18 @@ var commands []command
 func init() {
 	commands = make([]command, 0)
 
-	registerCommand("CAPABILITY", cmdCapability)
-	registerCommand("LOGIN \"([A-z0-9]+)\" \"([A-z0-9]+)\"", cmdLogin)
-	registerCommand("AUTHENTICATE PLAIN", cmdAuthPlain)
-	registerCommand("LIST", cmdList)
-	registerCommand("LSUB", cmdLSub)
-	registerCommand("LOGOUT", cmdLogout)
-	registerCommand("NOOP", cmdNoop)
-	registerCommand("CLOSE", cmdClose)
-	registerCommand("SELECT \"?([A-z0-9]+)\"?", cmdSelect)
-	registerCommand("EXAMINE \"?([A-z0-9]+)\"?", cmdExamine)
-	registerCommand("STATUS \"?([A-z0-9]+)\"? \\(([A-z\\s]+)\\)", cmdStatus)
-	registerCommand("(UID )?FETCH (?:(\\d+)(?:\\:([\\*\\d]+))?) \\(([A-z0-9\\s\\(\\)\\[\\]\\.-]+)\\)", cmdFetch)
+	registerCommand("(?i:CAPABILITY)", cmdCapability)
+	registerCommand("(?i:LOGIN) \"([A-z0-9]+)\" \"([A-z0-9]+)\"", cmdLogin)
+	registerCommand("(?i:AUTHENTICATE PLAIN)", cmdAuthPlain)
+	registerCommand("(?i:LIST) \"?([A-z0-9]+)?\"? \"?([A-z0-9*]+)?\"?", cmdList)
+	registerCommand("(?i:LSUB)", cmdLSub)
+	registerCommand("(?i:LOGOUT)", cmdLogout)
+	registerCommand("(?i:NOOP)", cmdNoop)
+	registerCommand("(?i:CLOSE)", cmdClose)
+	registerCommand("(?i:SELECT) \"?([A-z0-9]+)?\"?", cmdSelect)
+	registerCommand("(?i:EXAMINE) \"?([A-z0-9]+)\"?", cmdExamine)
+	registerCommand("(?i:STATUS) \"?([A-z0-9/]+)\"? \\(([A-z\\s]+)\\)", cmdStatus)
+	registerCommand("((?i)UID )?(?i:FETCH) (?:(\\d+)(?:\\:([\\*\\d]+))?) \\(([A-z0-9\\s\\(\\)\\[\\]\\.-]+)\\)", cmdFetch)
 }
 
 func registerCommand(matchExpr string, handleFunc func(commandArgs, *Conn)) error {
@@ -108,17 +108,32 @@ func cmdLogin(args commandArgs, c *Conn) {
 }
 
 func cmdList(args commandArgs, c *Conn) {
-	c.writeResponse("", "LIST () \"/\" INBOX")
-	c.writeResponse(args.Id(), "OK LIST Completed")
+	if args.Arg(1) == "" {
+		c.writeResponse("", "LIST (\\Noselect) \"/\" \"\"")
+	} else if args.Arg(1) == "*" {
+		for _, mailbox := range c.user.Mailboxes() {
+			c.writeResponse("", "LIST () \"/\" \""+mailbox.Name()+"\"")
+		}
+	}
+	c.writeResponse(args.Id(), "OK LIST completed")
 }
 
 func cmdStatus(args commandArgs, c *Conn) {
-	c.writeResponse("", "STATUS "+args.Arg(0)+" (UIDNEXT 2 UNSEEN 1)")
+	mailbox, err := c.user.MailboxByName(args.Arg(0))
+	if err != nil {
+		c.writeResponse(args.Id(), "NO "+err.Error())
+		return
+	}
+
+	c.writeResponse("", fmt.Sprintf("STATUS %s (UIDNEXT %d UNSEEN %d)",
+		mailbox.Name(), mailbox.NextUid(), mailbox.Unseen()))
 	c.writeResponse(args.Id(), "OK STATUS Completed")
 }
 
 func cmdLSub(args commandArgs, c *Conn) {
-	c.writeResponse("", "LSUB () \"/\" INBOX")
+	for _, mailbox := range c.user.Mailboxes() {
+		c.writeResponse("", "LSUB () \"/\" \""+mailbox.Name()+"\"")
+	}
 	c.writeResponse(args.Id(), "OK LSUB Completed")
 }
 
@@ -135,6 +150,7 @@ func writeMailboxInfo(c *Conn, m Mailbox) {
 	fmt.Fprintf(c, "* %d RECENT\r\n", m.Recent())
 	fmt.Fprintf(c, "* OK [UNSEEN %d]\r\n", m.Unseen())
 	fmt.Fprintf(c, "* OK [UIDNEXT %d]\r\n", m.NextUid())
+	fmt.Fprintf(c, "* OK [UIDVALIDITY %d]\r\n", 250)
 	fmt.Fprintf(c, "* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n")
 }
 
@@ -198,94 +214,25 @@ func cmdFetch(args commandArgs, c *Conn) {
 		msg = c.selectedMailbox.MessageBySequenceNumber(start)
 	}
 
-	uidRE := regexp.MustCompile("UID")
-	internalDateRE := regexp.MustCompile("INTERNALDATE")
-	sizeRE := regexp.MustCompile("RFC822\\.SIZE")
-	headersRE := regexp.MustCompile("BODY(?:\\.PEEK)?\\[HEADER\\]")
-	specificHeadersRE := regexp.MustCompile("BODY(?:\\.PEEK)?" +
-		"\\[HEADER\\.FIELDS \\(([A-z\\s-]+)\\)\\]")
-	bodyOnlyRE := regexp.MustCompile("BODY(?:\\.PEEK)?\\[TEXT\\]")
-	fullTextRE := regexp.MustCompile("BODY(?:\\.PEEK)?\\[\\]")
-	peekRE := regexp.MustCompile("\\.PEEK")
-
-	partsRequested := args.Arg(3)
-	peekRequested := peekRE.MatchString(partsRequested)
-	peekStr := ""
-	if peekRequested {
-		peekStr = ".PEEK"
+	fetchParamString := args.Arg(3)
+	if searchByUid && !strings.Contains(fetchParamString, "UID") {
+		fetchParamString += " UID"
 	}
 
-	reply := make([]string, 0)
-
-	// Did the client request the message UID?
-	if uidRE.MatchString(partsRequested) || searchByUid {
-		reply = append(reply, fmt.Sprintf("UID %d", msg.Uid()))
-	}
-
-	// Did the client request all mail headers?
-	if headersRE.MatchString(partsRequested) {
-		hdr := fmt.Sprintf("\r\n%s\r\n\r\n", msg.Header())
-		hdrLen := len(hdr)
-		reply = append(reply, fmt.Sprintf("BODY%s[HEADER] {%d}%s", peekStr, hdrLen, hdr))
-	}
-
-	// Did the client request internal date?
-	if internalDateRE.MatchString(partsRequested) {
-		dateStr := formatDate(msg.InternalDate())
-		reply = append(reply, fmt.Sprintf("INTERNALDATE \"%s\"", dateStr))
-	}
-
-	// Did the client request size?
-	if sizeRE.MatchString(partsRequested) {
-		reply = append(reply, fmt.Sprintf("RFC822.SIZE %d", msg.Size()))
-	}
-
-	// Did the client request only a specific subset of headers?
-	specificHeadersRequested := specificHeadersRE.FindStringSubmatch(partsRequested)
-	if len(specificHeadersRequested) > 0 {
-		if !peekRequested {
-			fmt.Printf("TODO: Peek not requested, mark all as non-recent\n")
+	fetchParams, err := fetch(fetchParamString, c, msg)
+	if err != nil {
+		if err == UnrecognisedParameterError {
+			c.writeResponse(args.Id(), "BAD Unrecognised Parameter")
+			return
+		} else {
+			c.writeResponse(args.Id(), "BAD")
+			return
 		}
-		fields := strings.Split(specificHeadersRequested[1], " ")
-		hdrs := msg.Header()
-		requestedHeaders := make(MIMEHeader)
-		for _, key := range fields {
-			// If the key exists in the headers, copy it over
-			if k, v, ok := hdrs.FindKey(key); ok {
-				requestedHeaders[k] = v
-			}
-		}
-		hdr := fmt.Sprintf("\r\n%s\r\n\r\n", requestedHeaders)
-		hdrLen := len(hdr)
-		reply = append(reply, fmt.Sprintf("BODY%s[HEADER.FIELDS (%s)] {%d}%s",
-			peekStr,
-			specificHeadersRequested[1],
-			hdrLen,
-			hdr))
-	}
-
-	// Did the client request only the body text of the email?
-	if bodyOnlyRE.MatchString(partsRequested) {
-		body := fmt.Sprintf("\r\n%s\r\n", msg.Body())
-		bodyLen := len(body)
-
-		reply = append(reply, fmt.Sprintf("BODY%s[TEXT] {%d}%s",
-			peekStr, bodyLen, body))
-	}
-
-	// Did the client request the complete email?
-	fullTextRequested := fullTextRE.MatchString(partsRequested)
-	if fullTextRequested {
-		mail := fmt.Sprintf("\r\n%s\r\n\r\n%s\r\n", msg.Header(), msg.Body())
-		mailLen := len(mail)
-
-		reply = append(reply, fmt.Sprintf("BODY%s[] {%d}%s",
-			peekStr, mailLen, mail))
 	}
 
 	fullReply := fmt.Sprintf("%d FETCH (%s)",
 		msg.SequenceNumber(),
-		strings.Join(reply, " "))
+		fetchParams)
 
 	c.writeResponse("", fullReply)
 	if searchByUid {
