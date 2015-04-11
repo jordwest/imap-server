@@ -21,11 +21,11 @@ func NewDummyMailstore() DummyMailstore {
 	ms := DummyMailstore{
 		user: DummyUser{
 			authenticated: false,
-			mailboxes:     make(map[string]DummyMailbox),
+			mailboxes:     make([]DummyMailbox, 2),
 		},
 	}
-	ms.user.mailboxes["INBOX"] = newDummyMailbox("INBOX")
-	ms.user.mailboxes["Trash"] = newDummyMailbox("Trash")
+	ms.user.mailboxes[0] = newDummyMailbox("INBOX")
+	ms.user.mailboxes[1] = newDummyMailbox("Trash")
 	return ms
 }
 
@@ -38,12 +38,13 @@ func (d DummyMailstore) Authenticate(username string, password string) (User, er
 		return DummyUser{}, errors.New("Invalid password. Use 'password'")
 	}
 
-	return DummyUser{authenticated: true}, nil
+	d.user.authenticated = true
+	return d.user, nil
 }
 
 type DummyUser struct {
 	authenticated bool
-	mailboxes     map[string]DummyMailbox
+	mailboxes     []DummyMailbox
 }
 
 func (u DummyUser) Mailboxes() []Mailbox {

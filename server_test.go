@@ -8,18 +8,12 @@ import (
 	"testing"
 )
 
-func getUser() DummyUser {
-	return DummyUser{authenticated: true}
-}
-
-func getInbox() DummyMailbox {
-	return DummyMailbox{name: "INBOX"}
-}
-
 type rig struct {
-	cConn  *textproto.Conn
-	sConn  *Conn
-	server *Server
+	cConn     *textproto.Conn
+	sConn     *Conn
+	server    *Server
+	mailstore DummyMailstore
+	inbox     *DummyMailbox
 }
 
 func (r *rig) expect(t *testing.T, expected string) {
@@ -63,9 +57,10 @@ func setup(t *testing.T) rig {
 		return rig{}
 	}
 	return rig{
-		sConn:  sConn,
-		cConn:  cConn,
-		server: server,
+		sConn:     sConn,
+		cConn:     cConn,
+		server:    server,
+		mailstore: server.mailstore.(DummyMailstore),
 	}
 }
 
@@ -87,7 +82,6 @@ func TestListDirectorySeparator(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 LIST \"\" \"\"")
 	r.expect(t, "* LIST (\\Noselect) \"/\" \"\"")
@@ -98,8 +92,8 @@ func TestListAllMailboxes(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
 	go r.sConn.Start()
+	r.sConn.user = r.mailstore.user
 	r.cConn.PrintfLine("abcd.123 LIST \"\" \"*\"")
 	r.expect(t, "* LIST () \"/\" \"INBOX\"")
 	r.expect(t, "* LIST () \"/\" \"Trash\"")
@@ -120,7 +114,7 @@ func TestSelect(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
+	r.sConn.user = r.mailstore.user
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 SELECT INBOX")
 	r.expect(t, "* 1 EXISTS")
@@ -135,7 +129,7 @@ func TestStatus(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
+	r.sConn.user = r.mailstore.user
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 STATUS INBOX (UIDNEXT UNSEEN)")
 	r.expect(t, "* STATUS INBOX (UIDNEXT 2 UNSEEN 1)")
@@ -146,8 +140,8 @@ func TestFetchFlagsUid(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (FLAGS UID)")
 	r.expect(t, "* 1 FETCH (FLAGS (\\Recent) UID 1)")
@@ -163,8 +157,8 @@ func TestFetchHeader(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER])")
 	r.expect(t, "* 1 FETCH (BODY[HEADER] {143}")
@@ -182,8 +176,8 @@ func TestFetchSpecificHeaders(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER.FIELDS (From Subject)])")
 	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"From\" \"Subject\")] {55}")
@@ -198,8 +192,8 @@ func TestFetchPeekSpecificHeaders(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY.PEEK[HEADER.FIELDS (from Subject x-priority)])")
 	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"from\" \"Subject\" \"x-priority\")] {55}")
@@ -214,8 +208,8 @@ func TestFetchInternalDate(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (INTERNALDATE)")
 	r.expect(t, "* 1 FETCH (INTERNALDATE \"28-Oct-2014 00:09:00 +0700\")")
@@ -226,8 +220,8 @@ func TestFetchRFC822Size(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (RFC822.SIZE)")
 	r.expect(t, "* 1 FETCH (RFC822.SIZE 189)")
@@ -238,8 +232,8 @@ func TestFetchBodyOnly(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[TEXT])")
 	r.expect(t, "* 1 FETCH (BODY[TEXT] {54}")
@@ -253,8 +247,8 @@ func TestFetchFullMessage(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[])")
 	r.expect(t, "* 1 FETCH (BODY[] {195}")
@@ -274,8 +268,8 @@ func TestFetchFullMessageByUid(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(StateAuthenticated)
-	r.sConn.user = getUser()
-	r.sConn.selectedMailbox = getInbox()
+	r.sConn.user = r.mailstore.user
+	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 UID FETCH 1 (BODY[])")
 	r.expect(t, "* 1 FETCH (BODY[] {195}")
