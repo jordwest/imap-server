@@ -21,7 +21,7 @@ type Mailbox interface {
 
 	// The unique identifier that will LIKELY be assigned
 	// to the next mail that is added to this mailbox
-	NextUid() int64
+	NextUid() int32
 
 	// Number of recent messages in the mailbox
 	Recent() int
@@ -36,11 +36,15 @@ type Mailbox interface {
 	MessageBySequenceNumber(seqno int) Message
 
 	// Get a message by its uid number
-	MessageByUid(uidno int) Message
+	MessageByUid(uidno int32) Message
 
 	// Get a range of messages between two UIDs
-	MessageRangeByUid(startUid int, endUid int) []Message
+	// startUid=0 indicates all messages up to endUid
+	// endUid=0 indicates all messages starting from startUid
+	MessageRangeByUid(startUid int32, endUid int32) []Message
 
+	// startSeq=0 indicates all messages up to endSeq
+	// endSeq=0 indicates all messages starting from startSeq
 	// Get a range of messages between two sequence numbers
 	MessageRangeBySequenceNumber(startSeq int, endSeq int) []Message
 }
@@ -51,7 +55,7 @@ type Message interface {
 	Header() MIMEHeader
 
 	// Return the unique id of the email
-	Uid() int
+	Uid() int32
 
 	// Return the sequence number of the email
 	SequenceNumber() int

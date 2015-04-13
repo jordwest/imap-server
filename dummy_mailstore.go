@@ -14,6 +14,7 @@ func newDummyMailbox(name string) DummyMailbox {
 	return DummyMailbox{
 		name:     name,
 		messages: make([]Message, 0),
+		nextuid:  1,
 	}
 }
 
@@ -25,6 +26,15 @@ func NewDummyMailstore() DummyMailstore {
 		},
 	}
 	ms.user.mailboxes[0] = newDummyMailbox("INBOX")
+	ms.user.mailboxes[0].addEmail("me@test.com", "you@test.com", "Test email", time.Now(),
+		"Test email\r\n"+
+			"Regards,\r\n"+
+			"Me")
+	ms.user.mailboxes[0].addEmail("me@test.com", "you@test.com", "Another test email", time.Now(),
+		"Another test email")
+	ms.user.mailboxes[0].addEmail("me@test.com", "you@test.com", "Last email", time.Now(),
+		"Hello")
+
 	ms.user.mailboxes[1] = newDummyMailbox("Trash")
 	return ms
 }
@@ -68,30 +78,51 @@ func (u DummyUser) MailboxByName(name string) (Mailbox, error) {
 
 type DummyMailbox struct {
 	name     string
+	nextuid  int32
 	messages []Message
 }
 
 func (m DummyMailbox) Name() string   { return m.name }
-func (m DummyMailbox) NextUid() int64 { return 2 }
-func (m DummyMailbox) Recent() int    { return 1 }
-func (m DummyMailbox) Messages() int  { return 1 }
-func (m DummyMailbox) Unseen() int    { return 1 }
+func (m DummyMailbox) NextUid() int32 { return m.nextuid }
+func (m DummyMailbox) Recent() int {
+	count := 0
+	for _, message := range m.messages {
+		if message.IsRecent() {
+			count++
+		}
+	}
+	return count
+}
+func (m DummyMailbox) Messages() int { return len(m.messages) }
+func (m DummyMailbox) Unseen() int {
+	count := 0
+	for _, message := range m.messages {
+		if !message.IsSeen() {
+			count++
+		}
+	}
+	return count
+}
 
 func (m DummyMailbox) MessageBySequenceNumber(seqno int) Message {
-	return DummyMessage{
-		sequenceNumber: seqno,
-		uid:            seqno,
+	if seqno >= len(m.messages) {
+		return DummyMessage{}
 	}
+	return m.messages[seqno-1]
 }
 
-func (m DummyMailbox) MessageByUid(uidno int) Message {
-	return DummyMessage{
-		sequenceNumber: uidno,
-		uid:            uidno,
+func (m DummyMailbox) MessageByUid(uidno int32) Message {
+	for _, message := range m.messages {
+		if message.Uid() == uidno {
+			return message
+		}
 	}
+
+	// No message found
+	return DummyMessage{}
 }
 
-func (m DummyMailbox) MessageRangeByUid(startUid int, endUid int) []Message {
+func (m DummyMailbox) MessageRangeByUid(startUid int32, endUid int32) []Message {
 	msgs := make([]Message, 2)
 	msgs[0] = m.MessageByUid(1)
 	msgs[1] = m.MessageByUid(2)
@@ -107,25 +138,44 @@ func (m DummyMailbox) MessageRangeBySequenceNumber(startUid int, endUid int) []M
 
 }
 
+func (m *DummyMailbox) addEmail(from string, to string, subject string, date time.Time, body string) {
+	uid := m.nextuid
+	m.nextuid++
+
+	hdr := make(map[string]string)
+	hdr["Date"] = date.Format(rfc822Date)
+	hdr["To"] = to
+	hdr["From"] = from
+	hdr["Subject"] = subject
+	hdr["Message-ID"] = fmt.Sprintf("<%d@test.com>", uid)
+
+	newMessage := DummyMessage{
+		sequenceNumber: len(m.messages) + 1,
+		uid:            uid,
+		recent:         true,
+		header:         hdr,
+	}
+	m.messages = append(m.messages, newMessage)
+}
+
 type DummyMessage struct {
 	sequenceNumber int
-	uid            int
+	uid            int32
+	header         MIMEHeader
+	seen           bool
+	deleted        bool
+	recent         bool
+	answered       bool
+	flagged        bool
+	draft          bool
 }
 
 func (m DummyMessage) Header() (hdr MIMEHeader) {
-	hdr = make(map[string]string)
-	hdr["Date"] = "Mon, 27 Oct 2014 13:45:00 +1000"
-	hdr["To"] = "you@test.com"
-	hdr["From"] = "me@test.com"
-	hdr["Subject"] = "This is a dummy email"
-	hdr["Message-ID"] = "<123456@test.com>"
-	return hdr
+	return m.header
 }
 
-func (m DummyMessage) Uid() int { return m.uid }
-func (m DummyMessage) SequenceNumber() int {
-	return m.sequenceNumber
-}
+func (m DummyMessage) Uid() int32          { return m.uid }
+func (m DummyMessage) SequenceNumber() int { return m.sequenceNumber }
 
 func (m DummyMessage) Size() int {
 	hdrStr := fmt.Sprintf("%s\r\n", m.Header())
@@ -148,9 +198,9 @@ func (m DummyMessage) Keywords() []string {
 	return f
 }
 
-func (m DummyMessage) IsSeen() bool     { return false }
-func (m DummyMessage) IsAnswered() bool { return false }
-func (m DummyMessage) IsFlagged() bool  { return false }
-func (m DummyMessage) IsDeleted() bool  { return false }
-func (m DummyMessage) IsDraft() bool    { return false }
-func (m DummyMessage) IsRecent() bool   { return true }
+func (m DummyMessage) IsSeen() bool     { return m.seen }
+func (m DummyMessage) IsAnswered() bool { return m.answered }
+func (m DummyMessage) IsFlagged() bool  { return m.flagged }
+func (m DummyMessage) IsDeleted() bool  { return m.deleted }
+func (m DummyMessage) IsDraft() bool    { return m.draft }
+func (m DummyMessage) IsRecent() bool   { return m.recent }

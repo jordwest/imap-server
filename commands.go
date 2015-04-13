@@ -49,6 +49,10 @@ func init() {
 	registerCommand("(?i:EXAMINE) \"?([A-z0-9]+)\"?", cmdExamine)
 	registerCommand("(?i:STATUS) \"?([A-z0-9/]+)\"? \\(([A-z\\s]+)\\)", cmdStatus)
 	registerCommand("((?i)UID )?(?i:FETCH) (?:(\\d+)(?:\\:([\\*\\d]+))?) \\(([A-z0-9\\s\\(\\)\\[\\]\\.-]+)\\)", cmdFetch)
+	// STORE 2:4 +FLAGS (\Deleted)       Mark messages as deleted
+	// STORE 2:4 -FLAGS (\Seen)          Mark messages as unseen
+	// STORE 2:4 FLAGS (\Seen \Deleted)  Replace flags
+	registerCommand("((?i)UID )?(?i:STORE) (?:(\\d+)(?:\\:([\\*\\d]+))?) [\\+\\-]?(?i:FLAGS) \\(?([\\\\A-z0-9]+)\\)?", cmdStoreFlags)
 }
 
 func registerCommand(matchExpr string, handleFunc func(commandArgs, *Conn)) error {
@@ -204,6 +208,12 @@ func messageFlags(msg Message) []string {
 	return flags
 }
 
+func cmdStoreFlags(args commandArgs, c *Conn) {
+	fmt.Printf("TODO: STORE command\n", args)
+	fmt.Printf("STORE command args: %+v\n\n", args)
+	c.writeResponse(args.Id(), "OK STORE Completed")
+}
+
 func cmdFetch(args commandArgs, c *Conn) {
 	start, _ := strconv.Atoi(args.Arg(1))
 
@@ -213,7 +223,7 @@ func cmdFetch(args commandArgs, c *Conn) {
 	var msg Message
 	if searchByUid {
 		fmt.Printf("Searching by UID\n")
-		msg = c.selectedMailbox.MessageByUid(start)
+		msg = c.selectedMailbox.MessageByUid(int32(start))
 	} else {
 		msg = c.selectedMailbox.MessageBySequenceNumber(start)
 	}
