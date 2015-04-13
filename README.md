@@ -1,4 +1,4 @@
-![go-IMAP Logo](https://raw.githubusercontent.com/jordwest/go-imap/master/assets/logo.png)
+![go-IMAP Logo](https://raw.githubusercontent.com/jordwest/imap-server/master/assets/logo.png)
 
 Go IMAP Server
 ==============
