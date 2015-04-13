@@ -12,12 +12,13 @@ messing around with maildir.
 
 Although it would be possible to implement and plug in a maildir storage
 interface, that would defeat the purpose of this project and there are much
-better open source and commercial solutions available (Courier, Dovecot etc).
+better, tried and tested open source and commercial solutions that have been 
+around for a long time (Courier, Dovecot etc).
 The goal of this project is to provide simple IMAP access to some kind of existing
 system without the overhead of installing a full-blown IMAP/POP3 mail server.
 
 
-**NOT READY FOR PRODUCTION USE**
+### NOT READY FOR PRODUCTION USE
 Currently only plaintext authentication is implemented. This is really bad,
 don't use it in any kind of environment where actual passwords or sensitive
 emails exists. Actually don't use it anywhere.
