@@ -29,6 +29,10 @@ func (a commandArgs) Arg(i int) string {
 
 const LIST_ARG_SELECTOR int = 1
 
+const STORE_ARG_OPERATION int = 3
+const STORE_ARG_SILENT int = 4
+const STORE_ARG_FLAGS int = 5
+
 var commands []command
 
 // Register all supported client command handlers
@@ -52,7 +56,7 @@ func init() {
 	// STORE 2:4 +FLAGS (\Deleted)       Mark messages as deleted
 	// STORE 2:4 -FLAGS (\Seen)          Mark messages as unseen
 	// STORE 2:4 FLAGS (\Seen \Deleted)  Replace flags
-	registerCommand("((?i)UID )?(?i:STORE) (?:(\\d+)(?:\\:([\\*\\d]+))?) [\\+\\-]?(?i:FLAGS) \\(?([\\\\A-z0-9]+)\\)?", cmdStoreFlags)
+	registerCommand("((?i)UID )?(?i:STORE) (?:(\\d+)(?:\\:([\\*\\d]+))?) ([\\+\\-])?(?i:FLAGS(\\.SILENT)?) \\(?([\\\\A-z0-9]+)\\)?", cmdStoreFlags)
 }
 
 func registerCommand(matchExpr string, handleFunc func(commandArgs, *Conn)) error {
@@ -209,8 +213,26 @@ func messageFlags(msg Message) []string {
 }
 
 func cmdStoreFlags(args commandArgs, c *Conn) {
-	fmt.Printf("TODO: STORE command\n", args)
 	fmt.Printf("STORE command args: %+v\n\n", args)
+	operation := args.Arg(STORE_ARG_OPERATION)
+	flags := args.Arg(STORE_ARG_FLAGS)
+
+	silent := false
+	if args.Arg(STORE_ARG_SILENT) == ".SILENT" {
+		silent = true
+	}
+	if silent {
+		fmt.Printf("Silently ")
+	}
+
+	if operation == "+" {
+		fmt.Printf("Add flags %s\n", flags)
+	} else if operation == "-" {
+		fmt.Printf("Remove flags %s\n", flags)
+	} else {
+		fmt.Printf("Set flags %s\n", flags)
+	}
+
 	c.writeResponse(args.Id(), "OK STORE Completed")
 }
 
