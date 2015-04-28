@@ -24,12 +24,6 @@ func (a commandArgs) Arg(i int) string {
 	return a[i+2]
 }
 
-const LIST_ARG_SELECTOR int = 1
-
-const STORE_ARG_OPERATION int = 3
-const STORE_ARG_SILENT int = 4
-const STORE_ARG_FLAGS int = 5
-
 var commands []command
 
 // Register all supported client command handlers

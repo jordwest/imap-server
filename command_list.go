@@ -1,5 +1,7 @@
 package imap_server
 
+const LIST_ARG_SELECTOR int = 1
+
 func cmdList(args commandArgs, c *Conn) {
 	if args.Arg(LIST_ARG_SELECTOR) == "" {
 		// Blank selector means request directory separator
