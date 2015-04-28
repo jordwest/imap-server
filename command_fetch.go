@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +16,48 @@ var UnrecognisedParameterError = errors.New("Unrecognised Parameter")
 type fetchParamDefinition struct {
 	re      *regexp.Regexp
 	handler func([]string, *Conn, Message, bool) string
+}
+
+func cmdFetch(args commandArgs, c *Conn) {
+	start, _ := strconv.Atoi(args.Arg(1))
+
+	searchByUid := args.Arg(0) == "UID "
+
+	// Fetch the messages
+	var msg Message
+	if searchByUid {
+		fmt.Printf("Searching by UID\n")
+		msg = c.selectedMailbox.MessageByUid(int32(start))
+	} else {
+		msg = c.selectedMailbox.MessageBySequenceNumber(start)
+	}
+
+	fetchParamString := args.Arg(3)
+	if searchByUid && !strings.Contains(fetchParamString, "UID") {
+		fetchParamString += " UID"
+	}
+
+	fetchParams, err := fetch(fetchParamString, c, msg)
+	if err != nil {
+		if err == UnrecognisedParameterError {
+			c.writeResponse(args.Id(), "BAD Unrecognised Parameter")
+			return
+		} else {
+			c.writeResponse(args.Id(), "BAD")
+			return
+		}
+	}
+
+	fullReply := fmt.Sprintf("%d FETCH (%s)",
+		msg.SequenceNumber(),
+		fetchParams)
+
+	c.writeResponse("", fullReply)
+	if searchByUid {
+		c.writeResponse(args.Id(), "OK UID FETCH Completed")
+	} else {
+		c.writeResponse(args.Id(), "OK FETCH Completed")
+	}
 }
 
 // Fetch requested params from a given message
