@@ -2,6 +2,7 @@ package imap_server
 
 import "fmt"
 
+const STORE_ARG_RANGE int = 2
 const STORE_ARG_OPERATION int = 3
 const STORE_ARG_SILENT int = 4
 const STORE_ARG_FLAGS int = 5
