@@ -5,12 +5,12 @@ import (
 )
 
 func testRange(t *testing.T, rangeStr string, expectedMin string, expectedMax string, expectedErr error) {
-	min, max, err := interpretMessageRange(rangeStr)
-	if min != expectedMin {
-		t.Errorf("Range '%s': min '%s' did not match expected '%s'", rangeStr, min, expectedMin)
+	rng, err := interpretMessageRange(rangeStr)
+	if rng.min != expectedMin {
+		t.Errorf("Range '%s': min '%s' did not match expected '%s'", rangeStr, rng.min, expectedMin)
 	}
-	if max != expectedMax {
-		t.Errorf("Range '%s': max '%s' did not match expected '%s'", rangeStr, max, expectedMax)
+	if rng.max != expectedMax {
+		t.Errorf("Range '%s': max '%s' did not match expected '%s'", rangeStr, rng.max, expectedMax)
 	}
 	if err != expectedErr {
 		t.Errorf("Message range %s\n"+
