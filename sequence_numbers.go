@@ -1,8 +1,9 @@
 package imap_server
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
+	"strings"
 )
 
 // A single message identifier. Could be UID or sequence
@@ -19,19 +20,57 @@ type SequenceRange struct {
 // A set of sequence ranges. eg in IMAP: 1,3,5:9,18:*
 type SequenceSet []SequenceRange
 
-var errInvalidRangeString = errors.New("Invalid message identifier range specified")
+type errInvalidRangeString string
+type errInvalidSequenceSetString string
+
+func (e errInvalidRangeString) Error() string {
+	return fmt.Sprintf("Invalid sequence range string '%s' specified", string(e))
+}
+func (e errInvalidSequenceSetString) Error() string {
+	return fmt.Sprintf("Invalid sequence set string '%s' specified", string(e))
+}
 
 var rangeRegexp *regexp.Regexp
+var setRegexp *regexp.Regexp
 
 func init() {
-	rangeRegexp = regexp.MustCompile("^(\\d{1,10}|\\*)(?:\\:(\\d{1,10}|\\*))?$")
+	// Regex for finding a sequence range
+	rangeRegexp = regexp.MustCompile("^(\\d{1,10}|\\*)" + // Range lower bound - digit or star
+		"(?:\\:(\\d{1,10}|\\*))?$") // Range upper bound - digit or star
+
+	// Regex for finding a sequence-set - ie, multiple sequence ranges
+	setRegexp = regexp.MustCompile("^((?:\\d{1,10}|\\*)(?:\\:(?:\\d{1,10}|\\*))?)" + // First range
+		"(?:" + // Match zero or more additional ranges
+		"," + // Must be separated by a comma
+		"((?:\\d{1,10}|\\*)(?:\\:(?:\\d{1,10}|\\*))?)" + // Additional ranges
+		")*" + // Match zero or more
+		"$")
 }
 
 func interpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err error) {
 	result := rangeRegexp.FindStringSubmatch(imapMessageRange)
 	if len(result) == 0 {
-		return SequenceRange{}, errInvalidRangeString
+		return SequenceRange{}, errInvalidRangeString(imapMessageRange)
 	}
 
 	return SequenceRange{min: result[1], max: result[2]}, nil
+}
+
+func interpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {
+	// Ensure the sequence set is valid
+	if !setRegexp.MatchString(imapSequenceSet) {
+		return SequenceSet{}, errInvalidSequenceSetString(imapSequenceSet)
+	}
+
+	ranges := strings.Split(imapSequenceSet, ",")
+
+	seqSet = make(SequenceSet, len(ranges))
+	for index, rng := range ranges {
+		seqSet[index], err = interpretMessageRange(rng)
+		if err != nil {
+			return seqSet, err
+		}
+	}
+
+	return seqSet, nil
 }
