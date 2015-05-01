@@ -22,9 +22,20 @@ func (s SequenceNumber) Last() bool {
 	return false
 }
 
+// If true, no sequence number was specified
+func (s SequenceNumber) Nil() bool {
+	if s == "" {
+		return true
+	}
+	return false
+}
+
 func (s SequenceNumber) Value() (int32, error) {
 	if s.Last() {
 		return 0, fmt.Errorf("This sequence number indicates the last number in the mailbox and does not contain a value")
+	}
+	if s.Nil() {
+		return 0, fmt.Errorf("This sequence number is not set")
 	}
 
 	intVal, err := strconv.ParseInt(string(s), 10, 32)

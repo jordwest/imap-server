@@ -68,6 +68,9 @@ func TestSequenceNumber(t *testing.T) {
 	if a.Last() == false {
 		t.Errorf("Last() function for sequence number of * should return true")
 	}
+	if a.Nil() == true {
+		t.Errorf("Nil() function for non-blank sequence number should return false")
+	}
 	if _, err := a.Value(); err == nil {
 		t.Errorf("Value() function for sequence number of * should return an error")
 	}
@@ -81,5 +84,16 @@ func TestSequenceNumber(t *testing.T) {
 	}
 	if _, err := b.Value(); err != nil {
 		t.Errorf("Value() function for sequence number of 56 should not return an error")
+	}
+
+	c := SequenceNumber("")
+	if c.Last() == true {
+		t.Errorf("Last() function for blank sequence number should return false")
+	}
+	if c.Nil() == false {
+		t.Errorf("Nil() function for blank sequence number should return true")
+	}
+	if _, err := c.Value(); err == nil {
+		t.Errorf("Value() function for blank sequence number should return an error")
 	}
 }
