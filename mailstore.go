@@ -38,15 +38,11 @@ type Mailbox interface {
 	// Get a message by its uid number
 	MessageByUid(uidno int32) Message
 
-	// Get a range of messages between two UIDs
-	// startUid=0 indicates all messages up to endUid
-	// endUid=0 indicates all messages starting from startUid
-	MessageRangeByUid(startUid int32, endUid int32) []Message
+	// Get messages that belong to a set of ranges of UIDs
+	MessageSetByUid(set SequenceSet) []Message
 
-	// startSeq=0 indicates all messages up to endSeq
-	// endSeq=0 indicates all messages starting from startSeq
-	// Get a range of messages between two sequence numbers
-	MessageRangeBySequenceNumber(startSeq int, endSeq int) []Message
+	// Get messages that belong to a set of ranges of sequence numbers
+	MessageSetBySequenceNumber(set SequenceSet) []Message
 }
 
 type Message interface {

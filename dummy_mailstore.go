@@ -122,7 +122,7 @@ func (m DummyMailbox) MessageByUid(uidno int32) Message {
 	return DummyMessage{}
 }
 
-func (m DummyMailbox) MessageRangeByUid(startUid int32, endUid int32) []Message {
+func (m DummyMailbox) MessageSetByUid(set SequenceSet) []Message {
 	msgs := make([]Message, 2)
 	msgs[0] = m.MessageByUid(1)
 	msgs[1] = m.MessageByUid(2)
@@ -130,7 +130,7 @@ func (m DummyMailbox) MessageRangeByUid(startUid int32, endUid int32) []Message 
 
 }
 
-func (m DummyMailbox) MessageRangeBySequenceNumber(startUid int, endUid int) []Message {
+func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
 	msgs := make([]Message, 2)
 	msgs[0] = m.MessageBySequenceNumber(1)
 	msgs[1] = m.MessageBySequenceNumber(2)

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func testRange(t *testing.T, rangeStr string, expectedMin string, expectedMax string, expectedErr error) {
+func testRange(t *testing.T, rangeStr string, expectedMin SequenceNumber, expectedMax SequenceNumber, expectedErr error) {
 	rng, err := interpretMessageRange(rangeStr)
 	if rng.min != expectedMin {
 		t.Errorf("Range '%s': min '%s' did not match expected '%s'", rangeStr, rng.min, expectedMin)
@@ -61,4 +61,25 @@ func TestSequenceSet(t *testing.T) {
 		SequenceRange{min: "18", max: "8"},
 	}, nil)
 	testSet(t, "1,3,:8:14,18:*", nil, errInvalidSequenceSetString("1,3,:8:14,18:*"))
+}
+
+func TestSequenceNumber(t *testing.T) {
+	a := SequenceNumber("*")
+	if a.Last() == false {
+		t.Errorf("Last() function for sequence number of * should return true")
+	}
+	if _, err := a.Value(); err == nil {
+		t.Errorf("Value() function for sequence number of * should return an error")
+	}
+
+	b := SequenceNumber("56")
+	if b.Last() == true {
+		t.Errorf("Last() function for sequence number of 56 should return false")
+	}
+	if v, _ := b.Value(); v != 56 {
+		t.Errorf("Value() function for sequence number of 56 should return integer 56")
+	}
+	if _, err := b.Value(); err != nil {
+		t.Errorf("Value() function for sequence number of 56 should not return an error")
+	}
 }

@@ -3,18 +3,41 @@ package imap_server
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 // A single message identifier. Could be UID or sequence
-// number. eg in IMAP: 8 or *
+// number.
 // See RFC3501 section 9
 type SequenceNumber string
 
+// If true, this sequence number indicates the *last* sequence number or UID
+// available in this mailbox
+// If false, this sequence number contains an integer value
+func (s SequenceNumber) Last() bool {
+	if s == "*" {
+		return true
+	}
+	return false
+}
+
+func (s SequenceNumber) Value() (int32, error) {
+	if s.Last() {
+		return 0, fmt.Errorf("This sequence number indicates the last number in the mailbox and does not contain a value")
+	}
+
+	intVal, err := strconv.ParseInt(string(s), 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("Could not parse integer value of sequence number")
+	}
+	return int32(intVal), nil
+}
+
 // A range of identifiers. eg in IMAP: 5:9 or 15:*
 type SequenceRange struct {
-	min string
-	max string
+	min SequenceNumber
+	max SequenceNumber
 }
 
 // A set of sequence ranges. eg in IMAP: 1,3,5:9,18:*
@@ -53,7 +76,7 @@ func interpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err
 		return SequenceRange{}, errInvalidRangeString(imapMessageRange)
 	}
 
-	return SequenceRange{min: result[1], max: result[2]}, nil
+	return SequenceRange{min: SequenceNumber(result[1]), max: SequenceNumber(result[2])}, nil
 }
 
 func interpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {
