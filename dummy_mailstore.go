@@ -131,9 +131,52 @@ func (m DummyMailbox) MessageSetByUid(set SequenceSet) []Message {
 }
 
 func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
-	msgs := make([]Message, 2)
-	msgs[0] = m.MessageBySequenceNumber(1)
-	msgs[1] = m.MessageBySequenceNumber(2)
+	msgs := make([]Message, 0)
+
+	// For each sequence range in the sequence set
+	for _, msgRange := range set {
+		start, err := msgRange.min.Value()
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return msgs
+		}
+
+		// If no max is specified, the sequence number must be either a fixed
+		// sequence number or
+		if msgRange.max.Nil() {
+			var sequenceNo uint32
+			if msgRange.min.Last() {
+				// Fetch the last message in the mailbox
+				// (sequence number = total number of messages in mailbox)
+				sequenceNo = m.Messages()
+			} else {
+				// Fetch specific message by sequence number
+				sequenceNo, err = msgRange.min.Value()
+				if err != nil {
+					fmt.Printf("Error: %s\n", err.Error())
+					return msgs
+				}
+			}
+			msgs = append(msgs, m.MessageBySequenceNumber(sequenceNo))
+			continue
+		}
+
+		var end uint32
+		if msgRange.max.Last() {
+			end = uint32(len(m.messages))
+		} else {
+			end, err = msgRange.max.Value()
+		}
+
+		// Note this is very inefficient when
+		// the message array is large. A proper
+		// storage system using eg SQL might
+		// instead perform a query here using
+		// the range values instead.
+		for index := uint32(start); index <= end; index += 1 {
+			msgs = append(msgs, m.MessageBySequenceNumber(index-1))
+		}
+	}
 	return msgs
 
 }
