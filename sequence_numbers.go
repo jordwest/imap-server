@@ -30,7 +30,7 @@ func (s SequenceNumber) Nil() bool {
 	return false
 }
 
-func (s SequenceNumber) Value() (int32, error) {
+func (s SequenceNumber) Value() (uint32, error) {
 	if s.Last() {
 		return 0, fmt.Errorf("This sequence number indicates the last number in the mailbox and does not contain a value")
 	}
@@ -38,11 +38,11 @@ func (s SequenceNumber) Value() (int32, error) {
 		return 0, fmt.Errorf("This sequence number is not set")
 	}
 
-	intVal, err := strconv.ParseInt(string(s), 10, 32)
+	intVal, err := strconv.ParseUint(string(s), 10, 32)
 	if err != nil {
 		return 0, fmt.Errorf("Could not parse integer value of sequence number")
 	}
-	return int32(intVal), nil
+	return uint32(intVal), nil
 }
 
 // A range of identifiers. eg in IMAP: 5:9 or 15:*

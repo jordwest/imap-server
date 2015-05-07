@@ -21,22 +21,22 @@ type Mailbox interface {
 
 	// The unique identifier that will LIKELY be assigned
 	// to the next mail that is added to this mailbox
-	NextUid() int32
+	NextUid() uint32
 
 	// Number of recent messages in the mailbox
-	Recent() int
+	Recent() uint32
 
 	// Number of messages in the mailbox
-	Messages() int
+	Messages() uint32
 
 	// Number messages that do not have the Unseen flag set yet
-	Unseen() int
+	Unseen() uint32
 
 	// Get a message by its sequence number
-	MessageBySequenceNumber(seqno int) Message
+	MessageBySequenceNumber(seqno uint32) Message
 
 	// Get a message by its uid number
-	MessageByUid(uidno int32) Message
+	MessageByUid(uidno uint32) Message
 
 	// Get messages that belong to a set of ranges of UIDs
 	MessageSetByUid(set SequenceSet) []Message
@@ -51,13 +51,13 @@ type Message interface {
 	Header() MIMEHeader
 
 	// Return the unique id of the email
-	Uid() int32
+	Uid() uint32
 
 	// Return the sequence number of the email
-	SequenceNumber() int
+	SequenceNumber() uint32
 
 	// Return the RFC822 size of the message
-	Size() int
+	Size() uint32
 
 	// Return the date the email was received by the server
 	// (This is not the date on the envelope of the email)

@@ -78,14 +78,14 @@ func (u DummyUser) MailboxByName(name string) (Mailbox, error) {
 
 type DummyMailbox struct {
 	name     string
-	nextuid  int32
+	nextuid  uint32
 	messages []Message
 }
 
-func (m DummyMailbox) Name() string   { return m.name }
-func (m DummyMailbox) NextUid() int32 { return m.nextuid }
-func (m DummyMailbox) Recent() int {
-	count := 0
+func (m DummyMailbox) Name() string    { return m.name }
+func (m DummyMailbox) NextUid() uint32 { return m.nextuid }
+func (m DummyMailbox) Recent() uint32 {
+	var count uint32 = 0
 	for _, message := range m.messages {
 		if message.IsRecent() {
 			count++
@@ -93,9 +93,9 @@ func (m DummyMailbox) Recent() int {
 	}
 	return count
 }
-func (m DummyMailbox) Messages() int { return len(m.messages) }
-func (m DummyMailbox) Unseen() int {
-	count := 0
+func (m DummyMailbox) Messages() uint32 { return uint32(len(m.messages)) }
+func (m DummyMailbox) Unseen() uint32 {
+	var count uint32 = 0
 	for _, message := range m.messages {
 		if !message.IsSeen() {
 			count++
@@ -104,14 +104,14 @@ func (m DummyMailbox) Unseen() int {
 	return count
 }
 
-func (m DummyMailbox) MessageBySequenceNumber(seqno int) Message {
-	if seqno >= len(m.messages) {
+func (m DummyMailbox) MessageBySequenceNumber(seqno uint32) Message {
+	if seqno >= uint32(len(m.messages)) {
 		return DummyMessage{}
 	}
 	return m.messages[seqno-1]
 }
 
-func (m DummyMailbox) MessageByUid(uidno int32) Message {
+func (m DummyMailbox) MessageByUid(uidno uint32) Message {
 	for _, message := range m.messages {
 		if message.Uid() == uidno {
 			return message
@@ -150,7 +150,7 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 	hdr["Message-ID"] = fmt.Sprintf("<%d@test.com>", uid)
 
 	newMessage := DummyMessage{
-		sequenceNumber: len(m.messages) + 1,
+		sequenceNumber: uint32(len(m.messages) + 1),
 		uid:            uid,
 		recent:         true,
 		header:         hdr,
@@ -159,8 +159,8 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 }
 
 type DummyMessage struct {
-	sequenceNumber int
-	uid            int32
+	sequenceNumber uint32
+	uid            uint32
 	header         MIMEHeader
 	seen           bool
 	deleted        bool
@@ -174,12 +174,12 @@ func (m DummyMessage) Header() (hdr MIMEHeader) {
 	return m.header
 }
 
-func (m DummyMessage) Uid() int32          { return m.uid }
-func (m DummyMessage) SequenceNumber() int { return m.sequenceNumber }
+func (m DummyMessage) Uid() uint32            { return m.uid }
+func (m DummyMessage) SequenceNumber() uint32 { return m.sequenceNumber }
 
-func (m DummyMessage) Size() int {
+func (m DummyMessage) Size() uint32 {
 	hdrStr := fmt.Sprintf("%s\r\n", m.Header())
-	return len(hdrStr) + len(m.Body())
+	return uint32(len(hdrStr)) + uint32(len(m.Body()))
 }
 
 func (m DummyMessage) InternalDate() time.Time {
