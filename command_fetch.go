@@ -44,10 +44,10 @@ func cmdFetch(args commandArgs, c *Conn) {
 		if err == ErrUnrecognisedParameter {
 			c.writeResponse(args.Id(), "BAD Unrecognised Parameter")
 			return
-		} else {
-			c.writeResponse(args.Id(), "BAD")
-			return
 		}
+
+		c.writeResponse(args.Id(), "BAD")
+		return
 	}
 
 	fullReply := fmt.Sprintf("%d FETCH (%s)",
