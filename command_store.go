@@ -2,18 +2,18 @@ package imap
 
 import "fmt"
 
-const STORE_ARG_RANGE int = 2
-const STORE_ARG_OPERATION int = 3
-const STORE_ARG_SILENT int = 4
-const STORE_ARG_FLAGS int = 5
+const storeArgRange int = 2
+const storeArgOperation int = 3
+const storeArgSilent int = 4
+const storeArgFlags int = 5
 
 func cmdStoreFlags(args commandArgs, c *Conn) {
 	fmt.Printf("STORE command args: %+v\n\n", args)
-	operation := args.Arg(STORE_ARG_OPERATION)
-	flags := args.Arg(STORE_ARG_FLAGS)
+	operation := args.Arg(storeArgOperation)
+	flags := args.Arg(storeArgFlags)
 
 	silent := false
-	if args.Arg(STORE_ARG_SILENT) == ".SILENT" {
+	if args.Arg(storeArgSilent) == ".SILENT" {
 		silent = true
 	}
 	if silent {
