@@ -102,7 +102,7 @@ func (c *Conn) Start() error {
 
 	}(c.recvReq)
 
-	for {
+	for c.state != stateLoggedOut {
 		// Always send welcome message if we are still in new connection state
 		if c.state == stateNew {
 			c.sendWelcome()
@@ -111,8 +111,10 @@ func (c *Conn) Start() error {
 		// Await requests from the client
 		select {
 		case req, ok := <-c.recvReq: // receive line of data from client
-			if ok == false {
-				return nil
+			if !ok {
+				// The client has closed the connection
+				c.state = stateLoggedOut
+				break
 			}
 			fmt.Fprintf(c.Transcript, "C: %s\n", req)
 			c.handleRequest(req)
