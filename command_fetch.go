@@ -65,10 +65,11 @@ func cmdFetch(args commandArgs, c *Conn) {
 // Fetch requested params from a given message
 // eg fetch("UID BODY[TEXT] RFC822.SIZE", c, message)
 func fetch(params string, c *Conn, m Message) (string, error) {
-	// Prepare the list of responses
-	responseParams := make([]string, 0)
-
 	paramList := splitParams(params)
+
+	// Prepare the list of responses
+	responseParams := make([]string, 0, len(paramList))
+
 	for _, param := range paramList {
 		paramResponse, err := fetchParam(param, c, m)
 		if err != nil {
