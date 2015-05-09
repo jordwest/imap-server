@@ -71,7 +71,7 @@ func writeMailboxInfo(c *Conn, m Mailbox) {
 }
 
 func messageFlags(msg Message) []string {
-	flags := make([]string, 0)
+	flags := make([]string, 0, 6) // Up to 6 flags
 	if msg.IsAnswered() {
 		flags = append(flags, "\\Answered")
 	}
