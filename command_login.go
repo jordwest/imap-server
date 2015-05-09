@@ -8,6 +8,6 @@ func cmdLogin(args commandArgs, c *Conn) {
 		c.writeResponse(args.Id(), "NO Incorrect username/password")
 		return
 	}
-	c.setState(StateAuthenticated)
+	c.setState(stateAuthenticated)
 	c.writeResponse(args.Id(), "OK Authenticated")
 }

@@ -12,11 +12,11 @@ import (
 type connState int
 
 const (
-	StateNew connState = iota
-	StateNotAuthenticated
-	StateAuthenticated
-	StateSelected
-	StateLoggedOut
+	stateNew connState = iota
+	stateNotAuthenticated
+	stateAuthenticated
+	stateSelected
+	stateLoggedOut
 )
 
 const lineEnding string = "\r\n"
@@ -68,11 +68,11 @@ func (c *Conn) writeResponse(seq string, command string) {
 
 // Send the server greeting to the client
 func (c *Conn) sendWelcome() error {
-	if c.state != StateNew {
+	if c.state != stateNew {
 		return errors.New("Welcome already sent")
 	}
 	c.writeResponse("", "OK IMAP4rev1 Service Ready")
-	c.setState(StateNotAuthenticated)
+	c.setState(stateNotAuthenticated)
 	return nil
 }
 
@@ -101,7 +101,7 @@ func (c *Conn) Start() error {
 
 	for {
 		// Always send welcome message if we are still in new connection state
-		if c.state == StateNew {
+		if c.state == stateNew {
 			c.sendWelcome()
 		}
 

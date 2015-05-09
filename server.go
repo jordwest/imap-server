@@ -84,7 +84,7 @@ func (s *Server) newConn(conn net.Conn) (c *Conn, err error) {
 	c = new(Conn)
 	c.srv = s
 	c.rwc = conn
-	c.setState(StateNew)
+	c.setState(stateNew)
 	c.Transcript = s.Transcript
 	return c, nil
 }
