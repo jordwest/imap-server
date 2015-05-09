@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-type ConnState int
+type connState int
 
 const (
-	StateNew ConnState = iota
+	StateNew connState = iota
 	StateNotAuthenticated
 	StateAuthenticated
 	StateSelected
@@ -23,7 +23,7 @@ const lineEnding string = "\r\n"
 
 // Represents a client connection to the IMAP server
 type Conn struct {
-	state           ConnState
+	state           connState
 	srv             *Server // Pointer to the IMAP server to which this connection belongs
 	rwc             net.Conn
 	Transcript      io.Writer
@@ -32,7 +32,7 @@ type Conn struct {
 	selectedMailbox Mailbox
 }
 
-func (c *Conn) setState(state ConnState) {
+func (c *Conn) setState(state connState) {
 	c.state = state
 }
 
