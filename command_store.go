@@ -1,9 +1,6 @@
 package imap
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 const storeArgUID int = 0
 const storeArgRange int = 1
@@ -12,7 +9,6 @@ const storeArgSilent int = 3
 const storeArgFlags int = 4
 
 func cmdStoreFlags(args commandArgs, c *Conn) {
-	fmt.Printf("STORE command args: %s\n\n", strings.Join(args, ","))
 	args.DebugPrint("STORE command")
 	operation := args.Arg(storeArgOperation)
 	flags := args.Arg(storeArgFlags)
