@@ -2,12 +2,14 @@ package imap
 
 import "time"
 
+// Mailstore is an interface to be implemented to provide mail storage
 type Mailstore interface {
 	// Attempt to authenticate a user with given credentials,
 	// and return the user if successful
 	Authenticate(username string, password string) (User, error)
 }
 
+// User represents a user in the mail storage system
 type User interface {
 	// Return a list of mailboxes belonging to this user
 	Mailboxes() []Mailbox
@@ -15,6 +17,7 @@ type User interface {
 	MailboxByName(name string) (Mailbox, error)
 }
 
+// Mailbox represents a mailbox belonging to a user in the mail storage system
 type Mailbox interface {
 	// The name of the mailbox
 	Name() string
@@ -45,6 +48,7 @@ type Mailbox interface {
 	MessageSetBySequenceNumber(set SequenceSet) []Message
 }
 
+// Message represents a standard email message
 type Message interface {
 	// Return the message's MIME headers as a map in format
 	// key: value
