@@ -11,7 +11,9 @@ import (
 var registeredFetchParams []fetchParamDefinition
 var peekRE *regexp.Regexp
 
-var UnrecognisedParameterError = errors.New("Unrecognised Parameter")
+// ErrUnrecognisedParameter indicates that the parameter requested in a FETCH
+// command is unrecognised or not implemented in this IMAP server
+var ErrUnrecognisedParameter = errors.New("Unrecognised Parameter")
 
 type fetchParamDefinition struct {
 	re      *regexp.Regexp
@@ -39,7 +41,7 @@ func cmdFetch(args commandArgs, c *Conn) {
 
 	fetchParams, err := fetch(fetchParamString, c, msg)
 	if err != nil {
-		if err == UnrecognisedParameterError {
+		if err == ErrUnrecognisedParameter {
 			c.writeResponse(args.Id(), "BAD Unrecognised Parameter")
 			return
 		} else {
@@ -89,7 +91,7 @@ func fetchParam(param string, c *Conn, m Message) (string, error) {
 			return element.handler(element.re.FindStringSubmatch(param), c, m, peek), nil
 		}
 	}
-	return "", UnrecognisedParameterError
+	return "", ErrUnrecognisedParameter
 }
 
 // Register all supported fetch parameters
