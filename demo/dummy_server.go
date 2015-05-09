@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	imap_server "github.com/jordwest/imap-server"
+	imap "github.com/jordwest/imap-server"
 )
 
 func main() {
-	store := imap_server.NewDummyMailstore()
-	s := imap_server.NewServer(store)
+	store := imap.NewDummyMailstore()
+	s := imap.NewServer(store)
 	s.Transcript = os.Stdout
 	s.Addr = ":10143"
 
