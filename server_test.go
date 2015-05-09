@@ -180,7 +180,7 @@ func TestFetchHeader(t *testing.T) {
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER] {127}")
+	r.expect(t, "* 1 FETCH (BODY[HEADER] {126}")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
@@ -243,7 +243,7 @@ func TestFetchRFC822Size(t *testing.T) {
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (RFC822.SIZE)")
-	r.expect(t, "* 1 FETCH (RFC822.SIZE 173)")
+	r.expect(t, "* 1 FETCH (RFC822.SIZE 172)")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
 
@@ -270,7 +270,7 @@ func TestFetchFullMessage(t *testing.T) {
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[])")
-	r.expect(t, "* 1 FETCH (BODY[] {179}")
+	r.expect(t, "* 1 FETCH (BODY[] {178}")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
@@ -291,7 +291,7 @@ func TestFetchFullMessageByUID(t *testing.T) {
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 UID FETCH 2 (BODY[])")
-	r.expect(t, "* 2 FETCH (BODY[] {187}")
+	r.expect(t, "* 2 FETCH (BODY[] {186}")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
