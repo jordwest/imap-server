@@ -1,4 +1,4 @@
-package imap_server
+package imap
 
 // Handles a CAPABILITY command
 func cmdCapability(args commandArgs, c *Conn) {

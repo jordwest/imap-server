@@ -1,4 +1,4 @@
-package imap_server
+package imap
 
 import (
 	"errors"

@@ -1,4 +1,4 @@
-package imap_server
+package imap
 
 const LIST_ARG_SELECTOR int = 1
 

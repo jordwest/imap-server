@@ -1,4 +1,4 @@
-package imap_server
+package imap
 
 import (
 	"encoding/base64"

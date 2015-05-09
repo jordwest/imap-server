@@ -1,4 +1,4 @@
-package imap_server
+package imap
 
 func cmdLogout(args commandArgs, c *Conn) {
 	c.writeResponse("", "BYE IMAP4rev1 server logging out")

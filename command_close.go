@@ -1,4 +1,4 @@
-package imap_server
+package imap
 
 func cmdClose(args commandArgs, c *Conn) {
 	c.setState(StateAuthenticated)

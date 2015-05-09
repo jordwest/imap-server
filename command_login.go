@@ -1,4 +1,4 @@
-package imap_server
+package imap
 
 // Handles PLAIN text LOGIN command
 func cmdLogin(args commandArgs, c *Conn) {
