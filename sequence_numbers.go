@@ -30,6 +30,10 @@ func (s SequenceNumber) Nil() bool {
 	return false
 }
 
+func (s SequenceNumber) IsValue() bool {
+	return (!s.Nil() && !s.Last())
+}
+
 // Value returns the integer value of the sequence number, if any is set.
 // If Nil or Last is true (ie, this sequence number is not an integer value)
 // then this returns 0 and an error
@@ -90,7 +94,29 @@ func interpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err
 		return SequenceRange{}, errInvalidRangeString(imapMessageRange)
 	}
 
-	return SequenceRange{min: SequenceNumber(result[1]), max: SequenceNumber(result[2])}, nil
+	first := SequenceNumber(result[1])
+	second := SequenceNumber(result[2])
+
+	// Reduce *:* to *
+	if first.Last() && second.Last() {
+		return SequenceRange{min: SequenceNumber("*"), max: SequenceNumber("")}, nil
+	}
+
+	// Ensure "*" is always placed in 'max'
+	if first.Last() && !second.Nil() {
+		return SequenceRange{min: second, max: first}, nil
+	}
+
+	// If both sequence numbers are integer values, we need to sort them
+	if first.IsValue() && second.IsValue() {
+		firstVal, _ := first.Value()
+		secondVal, _ := second.Value()
+		if firstVal > secondVal {
+			return SequenceRange{min: second, max: first}, nil
+		}
+	}
+
+	return SequenceRange{min: first, max: second}, nil
 }
 
 func interpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {

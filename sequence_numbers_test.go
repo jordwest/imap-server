@@ -37,6 +37,10 @@ func testSet(t *testing.T, setStr string, expectedSet []SequenceRange, expectedE
 
 func TestFindMessageRange(t *testing.T) {
 	testRange(t, "15:95", "15", "95", nil)
+	testRange(t, "95:15", "15", "95", nil)
+	testRange(t, "*:16", "16", "*", nil)
+	testRange(t, "*:*", "*", "", nil)
+	testRange(t, "12:12", "12", "12", nil)
 	testRange(t, "53:*", "53", "*", nil)
 	testRange(t, "35", "35", "", nil)
 	testRange(t, "*", "*", "", nil)
