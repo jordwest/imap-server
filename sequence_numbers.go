@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-// A single message identifier. Could be UID or sequence
+// SequenceNumber represents a  single message identifier. Could be UID or sequence
 // number.
 // See RFC3501 section 9
 type SequenceNumber string
 
-// If true, this sequence number indicates the *last* sequence number or UID
+// Last returns true if this sequence number indicates the *last* sequence number or UID
 // available in this mailbox
 // If false, this sequence number contains an integer value
 func (s SequenceNumber) Last() bool {
@@ -22,7 +22,7 @@ func (s SequenceNumber) Last() bool {
 	return false
 }
 
-// If true, no sequence number was specified
+// Nil returns true if no sequence number was specified
 func (s SequenceNumber) Nil() bool {
 	if s == "" {
 		return true
@@ -30,6 +30,9 @@ func (s SequenceNumber) Nil() bool {
 	return false
 }
 
+// Value returns the integer value of the sequence number, if any is set.
+// If Nil or Last is true (ie, this sequence number is not an integer value)
+// then this returns 0 and an error
 func (s SequenceNumber) Value() (uint32, error) {
 	if s.Last() {
 		return 0, fmt.Errorf("This sequence number indicates the last number in the mailbox and does not contain a value")
@@ -45,13 +48,13 @@ func (s SequenceNumber) Value() (uint32, error) {
 	return uint32(intVal), nil
 }
 
-// A range of identifiers. eg in IMAP: 5:9 or 15:*
+// SequenceRange represents a range of identifiers. eg in IMAP: 5:9 or 15:*
 type SequenceRange struct {
 	min SequenceNumber
 	max SequenceNumber
 }
 
-// A set of sequence ranges. eg in IMAP: 1,3,5:9,18:*
+// SequenceSet represents set of sequence ranges. eg in IMAP: 1,3,5:9,18:*
 type SequenceSet []SequenceRange
 
 type errInvalidRangeString string
