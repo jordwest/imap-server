@@ -81,7 +81,7 @@ func TestWelcomeMessage(t *testing.T) {
 func TestListDirectorySeparator(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 LIST \"\" \"\"")
 	r.expect(t, "* LIST (\\Noselect) \"/\" \"\"")
@@ -91,7 +91,7 @@ func TestListDirectorySeparator(t *testing.T) {
 func TestListAllMailboxes(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	go r.sConn.Start()
 	r.sConn.user = r.mailstore.user
 	r.cConn.PrintfLine("abcd.123 LIST \"\" \"*\"")
@@ -103,7 +103,7 @@ func TestListAllMailboxes(t *testing.T) {
 func TestCapabilities(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateNotAuthenticated)
+	r.sConn.setState(stateNotAuthenticated)
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 CAPABILITY")
 	r.expect(t, "* CAPABILITY IMAP4rev1 AUTH=PLAIN")
@@ -113,7 +113,7 @@ func TestCapabilities(t *testing.T) {
 func TestSelect(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 SELECT INBOX")
@@ -128,7 +128,7 @@ func TestSelect(t *testing.T) {
 func TestStatus(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 STATUS INBOX (UIDNEXT UNSEEN)")
@@ -139,7 +139,7 @@ func TestStatus(t *testing.T) {
 func TestStore(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -158,7 +158,7 @@ func TestStore(t *testing.T) {
 func TestFetchFlagsUid(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -175,7 +175,7 @@ func TestFetchFlagsUid(t *testing.T) {
 func TestFetchHeader(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -194,7 +194,7 @@ func TestFetchHeader(t *testing.T) {
 func TestFetchSpecificHeaders(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -210,7 +210,7 @@ func TestFetchSpecificHeaders(t *testing.T) {
 func TestFetchPeekSpecificHeaders(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -226,7 +226,7 @@ func TestFetchPeekSpecificHeaders(t *testing.T) {
 func TestFetchInternalDate(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -238,7 +238,7 @@ func TestFetchInternalDate(t *testing.T) {
 func TestFetchRFC822Size(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -250,7 +250,7 @@ func TestFetchRFC822Size(t *testing.T) {
 func TestFetchBodyOnly(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -265,7 +265,7 @@ func TestFetchBodyOnly(t *testing.T) {
 func TestFetchFullMessage(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
@@ -286,7 +286,7 @@ func TestFetchFullMessage(t *testing.T) {
 func TestFetchFullMessageByUid(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
-	r.sConn.setState(StateAuthenticated)
+	r.sConn.setState(stateAuthenticated)
 	r.sConn.user = r.mailstore.user
 	r.sConn.selectedMailbox = r.mailstore.user.mailboxes[0]
 	go r.sConn.Start()
