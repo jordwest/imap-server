@@ -5,9 +5,11 @@ import (
 	"strings"
 )
 
+// MIMEHeader represents a Key: Value type MIME header found in an email message
 type MIMEHeader map[string]string
 
-// Perform case-insensitive search
+// FindKey performs a case-insensitive search on the header and returns the key,
+// the value, and a boolean representing whether the key was found
 func (h MIMEHeader) FindKey(searchKey string) (string, string, bool) {
 	for key, val := range h {
 		if strings.EqualFold(key, searchKey) {
