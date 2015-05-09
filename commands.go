@@ -24,6 +24,18 @@ func (a commandArgs) Arg(i int) string {
 	return a[i+2]
 }
 
+func (a commandArgs) DebugPrint(prompt string) {
+	fmt.Printf("%s\n", prompt)
+	fmt.Printf("\tFull Command: %s\n", a.FullCommand())
+	fmt.Printf("\t.ID(): %s\n", a.ID())
+	for index, arg := range a {
+		if index < 2 {
+			continue
+		}
+		fmt.Printf("\t.Arg(%d): \"%s\"\n", index-2, arg)
+	}
+}
+
 var commands []command
 
 // Register all supported client command handlers
