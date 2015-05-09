@@ -26,6 +26,10 @@ type Mailbox interface {
 	// to the next mail that is added to this mailbox
 	NextUID() uint32
 
+	// The UID of the very last message in the mailbox
+	// If the mailbox is empty, this should return the next expected UID
+	LastUID() uint32
+
 	// Number of recent messages in the mailbox
 	Recent() uint32
 

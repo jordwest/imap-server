@@ -16,7 +16,7 @@ func newDummyMailbox(name string) DummyMailbox {
 	return DummyMailbox{
 		name:     name,
 		messages: make([]Message, 0),
-		nextuid:  1,
+		nextuid:  10,
 	}
 }
 
@@ -91,12 +91,31 @@ type DummyMailbox struct {
 	messages []Message
 }
 
+// DebugPrintMailbox prints out all messages in the mailbox to the command line
+// for debugging purposes
+func (m DummyMailbox) DebugPrintMailbox() {
+	debugPrintMessages(m.messages)
+}
+
 // Name returns the Mailbox's name
 func (m DummyMailbox) Name() string { return m.name }
 
 // NextUID returns the UID that is likely to be assigned to the next
 // new message in the Mailbox
 func (m DummyMailbox) NextUID() uint32 { return m.nextuid }
+
+// LastUID returns the UID of the last message in the mailbox or if the
+// mailbox is empty, the next expected UID
+func (m DummyMailbox) LastUID() uint32 {
+	lastMsgIndex := len(m.messages) - 1
+
+	// If no messages in the mailbox, return the next UID
+	if lastMsgIndex == -1 {
+		return m.NextUID()
+	}
+
+	return m.messages[lastMsgIndex].UID()
+}
 
 // Recent returns the number of messages in the mailbox which are currently
 // marked with the 'Recent' flag
@@ -127,7 +146,7 @@ func (m DummyMailbox) Unseen() uint32 {
 
 // MessageBySequenceNumber returns a single message given the message's sequence number
 func (m DummyMailbox) MessageBySequenceNumber(seqno uint32) Message {
-	if seqno >= uint32(len(m.messages)) {
+	if seqno > uint32(len(m.messages)) {
 		return DummyMessage{}
 	}
 	return m.messages[seqno-1]
@@ -148,11 +167,65 @@ func (m DummyMailbox) MessageByUID(uidno uint32) Message {
 // MessageSetByUID returns a slice of messages given a set of UID ranges.
 // eg 1,5,9,28:140,190:*
 func (m DummyMailbox) MessageSetByUID(set SequenceSet) []Message {
-	msgs := make([]Message, 2)
-	msgs[0] = m.MessageByUID(1)
-	msgs[1] = m.MessageByUID(2)
-	return msgs
+	var msgs []Message
 
+	// If the mailbox is empty, return empty array
+	if m.Messages() == 0 {
+		return msgs
+	}
+
+	for _, msgRange := range set {
+		// If min is "*", meaning the last UID in the mailbox, max should
+		// always be Nil
+		if msgRange.min.Last() {
+			// Return the last message in the mailbox
+			msgs = append(msgs, m.MessageByUID(m.LastUID()))
+			continue
+		}
+
+		start, err := msgRange.min.Value()
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return msgs
+		}
+
+		// If no max is specified, the sequence number must be either a fixed
+		// sequence number or
+		if msgRange.max.Nil() {
+			var uid uint32
+			// Fetch specific message by sequence number
+			uid, err = msgRange.min.Value()
+			msgs = append(msgs, m.MessageByUID(uid))
+			if err != nil {
+				fmt.Printf("Error: %s\n", err.Error())
+				return msgs
+			}
+			continue
+		}
+
+		var end uint32
+		if msgRange.max.Last() {
+			end = m.LastUID()
+		} else {
+			end, err = msgRange.max.Value()
+		}
+
+		// Note this is very inefficient when
+		// the message array is large. A proper
+		// storage system using eg SQL might
+		// instead perform a query here using
+		// the range values instead.
+		for _, msg := range m.messages {
+			uid := msg.UID()
+			if uid >= start && uid <= end {
+				msgs = append(msgs, msg)
+			}
+		}
+		for index := uint32(start); index <= end; index++ {
+		}
+	}
+
+	return msgs
 }
 
 // MessageSetBySequenceNumber returns a slice of messages given a set of
@@ -160,8 +233,21 @@ func (m DummyMailbox) MessageSetByUID(set SequenceSet) []Message {
 func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
 	var msgs []Message
 
+	// If the mailbox is empty, return empty array
+	if m.Messages() == 0 {
+		return msgs
+	}
+
 	// For each sequence range in the sequence set
 	for _, msgRange := range set {
+		// If min is "*", meaning the last message in the mailbox, max should
+		// always be Nil
+		if msgRange.min.Last() {
+			// Return the last message in the mailbox
+			msgs = append(msgs, m.MessageBySequenceNumber(m.Messages()))
+			continue
+		}
+
 		start, err := msgRange.min.Value()
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
@@ -172,17 +258,11 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
 		// sequence number or
 		if msgRange.max.Nil() {
 			var sequenceNo uint32
-			if msgRange.min.Last() {
-				// Fetch the last message in the mailbox
-				// (sequence number = total number of messages in mailbox)
-				sequenceNo = m.Messages()
-			} else {
-				// Fetch specific message by sequence number
-				sequenceNo, err = msgRange.min.Value()
-				if err != nil {
-					fmt.Printf("Error: %s\n", err.Error())
-					return msgs
-				}
+			// Fetch specific message by sequence number
+			sequenceNo, err = msgRange.min.Value()
+			if err != nil {
+				fmt.Printf("Error: %s\n", err.Error())
+				return msgs
 			}
 			msgs = append(msgs, m.MessageBySequenceNumber(sequenceNo))
 			continue
@@ -200,8 +280,8 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
 		// storage system using eg SQL might
 		// instead perform a query here using
 		// the range values instead.
-		for index := uint32(start); index <= end; index++ {
-			msgs = append(msgs, m.MessageBySequenceNumber(index-1))
+		for seqNo := start; seqNo <= end; seqNo++ {
+			msgs = append(msgs, m.MessageBySequenceNumber(seqNo))
 		}
 	}
 	return msgs

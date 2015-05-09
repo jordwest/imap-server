@@ -33,3 +33,14 @@ func splitParams(params string) []string {
 	})
 	return result
 }
+
+func debugPrintMessages(messages []Message) {
+	fmt.Printf("SeqNo  |UID    |From      |To        |Subject\n")
+	fmt.Printf("-------+-------+----------+----------+-------\n")
+	for _, msg := range messages {
+		_, from, _ := msg.Header().FindKey("from")
+		_, to, _ := msg.Header().FindKey("to")
+		_, subject, _ := msg.Header().FindKey("subject")
+		fmt.Printf("%-7d|%-7d|%-10.10s|%-10.10s|%s\n", msg.SequenceNumber(), msg.UID(), from, to, subject)
+	}
+}
