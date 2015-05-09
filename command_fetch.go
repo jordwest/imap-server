@@ -23,11 +23,11 @@ type fetchParamDefinition struct {
 func cmdFetch(args commandArgs, c *Conn) {
 	start, _ := strconv.Atoi(args.Arg(1))
 
-	searchByUid := args.Arg(0) == "UID "
+	searchByUID := args.Arg(0) == "UID "
 
 	// Fetch the messages
 	var msg Message
-	if searchByUid {
+	if searchByUID {
 		fmt.Printf("Searching by UID\n")
 		msg = c.selectedMailbox.MessageByUid(uint32(start))
 	} else {
@@ -35,7 +35,7 @@ func cmdFetch(args commandArgs, c *Conn) {
 	}
 
 	fetchParamString := args.Arg(3)
-	if searchByUid && !strings.Contains(fetchParamString, "UID") {
+	if searchByUID && !strings.Contains(fetchParamString, "UID") {
 		fetchParamString += " UID"
 	}
 
@@ -55,7 +55,7 @@ func cmdFetch(args commandArgs, c *Conn) {
 		fetchParams)
 
 	c.writeResponse("", fullReply)
-	if searchByUid {
+	if searchByUID {
 		c.writeResponse(args.Id(), "OK UID FETCH Completed")
 	} else {
 		c.writeResponse(args.Id(), "OK FETCH Completed")
@@ -98,7 +98,7 @@ func fetchParam(param string, c *Conn, m Message) (string, error) {
 func init() {
 	peekRE = regexp.MustCompile("\\.PEEK")
 	registeredFetchParams = make([]fetchParamDefinition, 0)
-	registerFetchParam("UID", fetchUid)
+	registerFetchParam("UID", fetchUID)
 	registerFetchParam("FLAGS", fetchFlags)
 	registerFetchParam("RFC822\\.SIZE", fetchRfcSize)
 	registerFetchParam("INTERNALDATE", fetchInternalDate)
@@ -118,7 +118,7 @@ func registerFetchParam(regex string, handler func([]string, *Conn, Message, boo
 }
 
 // Fetch the UID of the mail message
-func fetchUid(args []string, c *Conn, m Message, peekOnly bool) string {
+func fetchUID(args []string, c *Conn, m Message, peekOnly bool) string {
 	return fmt.Sprintf("UID %d", m.Uid())
 }
 
