@@ -65,7 +65,7 @@ func writeMailboxInfo(c *Conn, m Mailbox) {
 	fmt.Fprintf(c, "* %d EXISTS\r\n", m.Messages())
 	fmt.Fprintf(c, "* %d RECENT\r\n", m.Recent())
 	fmt.Fprintf(c, "* OK [UNSEEN %d]\r\n", m.Unseen())
-	fmt.Fprintf(c, "* OK [UIDNEXT %d]\r\n", m.NextUid())
+	fmt.Fprintf(c, "* OK [UIDNEXT %d]\r\n", m.NextUID())
 	fmt.Fprintf(c, "* OK [UIDVALIDITY %d]\r\n", 250)
 	fmt.Fprintf(c, "* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n")
 }

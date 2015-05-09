@@ -29,7 +29,7 @@ func cmdFetch(args commandArgs, c *Conn) {
 	var msg Message
 	if searchByUID {
 		fmt.Printf("Searching by UID\n")
-		msg = c.selectedMailbox.MessageByUid(uint32(start))
+		msg = c.selectedMailbox.MessageByUID(uint32(start))
 	} else {
 		msg = c.selectedMailbox.MessageBySequenceNumber(uint32(start))
 	}
@@ -120,7 +120,7 @@ func registerFetchParam(regex string, handler func([]string, *Conn, Message, boo
 
 // Fetch the UID of the mail message
 func fetchUID(args []string, c *Conn, m Message, peekOnly bool) string {
-	return fmt.Sprintf("UID %d", m.Uid())
+	return fmt.Sprintf("UID %d", m.UID())
 }
 
 func fetchFlags(args []string, c *Conn, m Message, peekOnly bool) string {

@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// DummyMailstore is an in-memory mail storage for testing purposes and to
+// provide an example implementation of a mailstore
 type DummyMailstore struct {
 	user DummyUser
 }
@@ -18,6 +20,8 @@ func newDummyMailbox(name string) DummyMailbox {
 	}
 }
 
+// NewDummyMailstore performs some initialisation and should always be
+// used to create a new DummyMailstore
 func NewDummyMailstore() DummyMailstore {
 	ms := DummyMailstore{
 		user: DummyUser{
@@ -39,6 +43,7 @@ func NewDummyMailstore() DummyMailstore {
 	return ms
 }
 
+// Authenticate implements the Authenticate method on the Mailstore interface
 func (d DummyMailstore) Authenticate(username string, password string) (User, error) {
 	if username != "username" {
 		return DummyUser{}, errors.New("Invalid username. Use 'username'")
@@ -52,11 +57,13 @@ func (d DummyMailstore) Authenticate(username string, password string) (User, er
 	return d.user, nil
 }
 
+// DummyUser is an in-memory representation of a mailstore's user
 type DummyUser struct {
 	authenticated bool
 	mailboxes     []DummyMailbox
 }
 
+// Mailboxes implements the Mailboxes method on the User interface
 func (u DummyUser) Mailboxes() []Mailbox {
 	mailboxes := make([]Mailbox, len(u.mailboxes))
 	index := 0
@@ -67,6 +74,7 @@ func (u DummyUser) Mailboxes() []Mailbox {
 	return mailboxes
 }
 
+// MailboxByName returns a DummyMailbox object, given the mailbox's name
 func (u DummyUser) MailboxByName(name string) (Mailbox, error) {
 	for _, mailbox := range u.mailboxes {
 		if mailbox.Name() == name {
@@ -76,16 +84,24 @@ func (u DummyUser) MailboxByName(name string) (Mailbox, error) {
 	return DummyMailbox{}, errors.New("Invalid mailbox")
 }
 
+// DummyMailbox is an in-memory implementation of a Mailstore Mailbox
 type DummyMailbox struct {
 	name     string
 	nextuid  uint32
 	messages []Message
 }
 
-func (m DummyMailbox) Name() string    { return m.name }
-func (m DummyMailbox) NextUid() uint32 { return m.nextuid }
+// Name returns the Mailbox's name
+func (m DummyMailbox) Name() string { return m.name }
+
+// NextUID returns the UID that is likely to be assigned to the next
+// new message in the Mailbox
+func (m DummyMailbox) NextUID() uint32 { return m.nextuid }
+
+// Recent returns the number of messages in the mailbox which are currently
+// marked with the 'Recent' flag
 func (m DummyMailbox) Recent() uint32 {
-	var count uint32 = 0
+	var count uint32
 	for _, message := range m.messages {
 		if message.IsRecent() {
 			count++
@@ -93,9 +109,14 @@ func (m DummyMailbox) Recent() uint32 {
 	}
 	return count
 }
+
+// Messages returns the total number of messages in the Mailbox
 func (m DummyMailbox) Messages() uint32 { return uint32(len(m.messages)) }
+
+// Unseen returns the number of messages in the mailbox which are currently
+// marked with the 'Unseen' flag
 func (m DummyMailbox) Unseen() uint32 {
-	var count uint32 = 0
+	count := uint32(0)
 	for _, message := range m.messages {
 		if !message.IsSeen() {
 			count++
@@ -104,6 +125,7 @@ func (m DummyMailbox) Unseen() uint32 {
 	return count
 }
 
+// MessageBySequenceNumber returns a single message given the message's sequence number
 func (m DummyMailbox) MessageBySequenceNumber(seqno uint32) Message {
 	if seqno >= uint32(len(m.messages)) {
 		return DummyMessage{}
@@ -111,9 +133,10 @@ func (m DummyMailbox) MessageBySequenceNumber(seqno uint32) Message {
 	return m.messages[seqno-1]
 }
 
-func (m DummyMailbox) MessageByUid(uidno uint32) Message {
+// MessageByUID returns a single message given the message's sequence number
+func (m DummyMailbox) MessageByUID(uidno uint32) Message {
 	for _, message := range m.messages {
-		if message.Uid() == uidno {
+		if message.UID() == uidno {
 			return message
 		}
 	}
@@ -122,16 +145,20 @@ func (m DummyMailbox) MessageByUid(uidno uint32) Message {
 	return DummyMessage{}
 }
 
-func (m DummyMailbox) MessageSetByUid(set SequenceSet) []Message {
+// MessageSetByUID returns a slice of messages given a set of UID ranges.
+// eg 1,5,9,28:140,190:*
+func (m DummyMailbox) MessageSetByUID(set SequenceSet) []Message {
 	msgs := make([]Message, 2)
-	msgs[0] = m.MessageByUid(1)
-	msgs[1] = m.MessageByUid(2)
+	msgs[0] = m.MessageByUID(1)
+	msgs[1] = m.MessageByUID(2)
 	return msgs
 
 }
 
+// MessageSetBySequenceNumber returns a slice of messages given a set of
+// sequence number ranges
 func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
-	msgs := make([]Message, 0)
+	var msgs []Message
 
 	// For each sequence range in the sequence set
 	for _, msgRange := range set {
@@ -173,7 +200,7 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
 		// storage system using eg SQL might
 		// instead perform a query here using
 		// the range values instead.
-		for index := uint32(start); index <= end; index += 1 {
+		for index := uint32(start); index <= end; index++ {
 			msgs = append(msgs, m.MessageBySequenceNumber(index-1))
 		}
 	}
@@ -201,6 +228,7 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 	m.messages = append(m.messages, newMessage)
 }
 
+// DummyMessage is a representation of a single in-memory message in a DummyMailbox
 type DummyMessage struct {
 	sequenceNumber uint32
 	uid            uint32
@@ -213,37 +241,56 @@ type DummyMessage struct {
 	draft          bool
 }
 
+// Header returns the message's MIME Header
 func (m DummyMessage) Header() (hdr MIMEHeader) {
 	return m.header
 }
 
-func (m DummyMessage) Uid() uint32            { return m.uid }
+// UID returns the message's unique identifier (UID)
+func (m DummyMessage) UID() uint32 { return m.uid }
+
+// SequenceNumber returns the message's sequence number
 func (m DummyMessage) SequenceNumber() uint32 { return m.sequenceNumber }
 
+// Size returns the message's full RFC822 size, including full message header and body
 func (m DummyMessage) Size() uint32 {
 	hdrStr := fmt.Sprintf("%s\r\n", m.Header())
 	return uint32(len(hdrStr)) + uint32(len(m.Body()))
 }
 
+// InternalDate returns the internally stored date of the message
 func (m DummyMessage) InternalDate() time.Time {
 	tz := time.FixedZone("Australia/Brisbane", 10*60*60)
 	return time.Date(2014, 10, 28, 0, 9, 0, 0, tz)
 }
 
+// Body returns the full body of the message
 func (m DummyMessage) Body() string {
 	return `This is the body of the email.
 It is a short email`
 }
 
+// Keywords returns any keywords associated with the message
 func (m DummyMessage) Keywords() []string {
-	f := make([]string, 0)
+	var f []string
 	//f[0] = "Test"
 	return f
 }
 
-func (m DummyMessage) IsSeen() bool     { return m.seen }
+// IsSeen returns true if the seen flag is set, false otherwise
+func (m DummyMessage) IsSeen() bool { return m.seen }
+
+// IsAnswered returns true if the Answered flag is set, false otherwise
 func (m DummyMessage) IsAnswered() bool { return m.answered }
-func (m DummyMessage) IsFlagged() bool  { return m.flagged }
-func (m DummyMessage) IsDeleted() bool  { return m.deleted }
-func (m DummyMessage) IsDraft() bool    { return m.draft }
-func (m DummyMessage) IsRecent() bool   { return m.recent }
+
+// IsFlagged returns true if the Flagged flag is set, false otherwise
+func (m DummyMessage) IsFlagged() bool { return m.flagged }
+
+// IsDeleted returns true if the Deleted flag is set, false otherwise
+func (m DummyMessage) IsDeleted() bool { return m.deleted }
+
+// IsDraft returns true if the Draft flag is set, false otherwise
+func (m DummyMessage) IsDraft() bool { return m.draft }
+
+// IsRecent returns true if the Recent flag is set, false otherwise
+func (m DummyMessage) IsRecent() bool { return m.recent }

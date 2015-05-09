@@ -155,7 +155,7 @@ func TestStore(t *testing.T) {
 	r.expect(t, "abcd.125 OK STORE Completed")
 }
 
-func TestFetchFlagsUid(t *testing.T) {
+func TestFetchFlagsUID(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(stateAuthenticated)
@@ -283,7 +283,7 @@ func TestFetchFullMessage(t *testing.T) {
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
 
-func TestFetchFullMessageByUid(t *testing.T) {
+func TestFetchFullMessageByUID(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
 	r.sConn.setState(stateAuthenticated)

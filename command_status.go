@@ -10,6 +10,6 @@ func cmdStatus(args commandArgs, c *Conn) {
 	}
 
 	c.writeResponse("", fmt.Sprintf("STATUS %s (UIDNEXT %d UNSEEN %d)",
-		mailbox.Name(), mailbox.NextUid(), mailbox.Unseen()))
+		mailbox.Name(), mailbox.NextUID(), mailbox.Unseen()))
 	c.writeResponse(args.ID(), "OK STATUS Completed")
 }
