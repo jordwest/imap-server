@@ -21,7 +21,7 @@ const (
 
 const lineEnding string = "\r\n"
 
-// Represents a client connection to the IMAP server
+// Conn represents a client connection to the IMAP server
 type Conn struct {
 	state           connState
 	srv             *Server // Pointer to the IMAP server to which this connection belongs
