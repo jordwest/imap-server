@@ -76,11 +76,14 @@ func (c *Conn) sendWelcome() error {
 	return nil
 }
 
+// Close forces the server to close the client's connection
 func (c *Conn) Close() error {
 	fmt.Fprintf(c.Transcript, "Server closing connection\n")
 	return c.rwc.Close()
 }
 
+// Start tells the server to start communicating with the client (after
+// the connection has been opened)
 func (c *Conn) Start() error {
 	if c.rwc == nil {
 		return errors.New("No connection exists")
