@@ -12,5 +12,5 @@ func cmdList(args commandArgs, c *Conn) {
 			c.writeResponse("", "LIST () \"/\" \""+mailbox.Name()+"\"")
 		}
 	}
-	c.writeResponse(args.Id(), "OK LIST completed")
+	c.writeResponse(args.ID(), "OK LIST completed")
 }

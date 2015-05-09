@@ -28,5 +28,5 @@ func cmdStoreFlags(args commandArgs, c *Conn) {
 		fmt.Printf("Set flags %s\n", flags)
 	}
 
-	c.writeResponse(args.Id(), "OK STORE Completed")
+	c.writeResponse(args.ID(), "OK STORE Completed")
 }

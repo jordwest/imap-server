@@ -16,7 +16,7 @@ func (a commandArgs) FullCommand() string {
 	return a[0]
 }
 
-func (a commandArgs) Id() string {
+func (a commandArgs) ID() string {
 	return a[1]
 }
 
@@ -94,5 +94,5 @@ func messageFlags(msg Message) []string {
 }
 
 func cmdNA(args commandArgs, c *Conn) {
-	c.writeResponse(args.Id(), "BAD Not implemented")
+	c.writeResponse(args.ID(), "BAD Not implemented")
 }

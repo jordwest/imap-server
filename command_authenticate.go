@@ -24,14 +24,14 @@ func cmdAuthPlain(args commandArgs, c *Conn) {
 	fmt.Printf("Auth details received: %q\n", data)
 	match := loginRE.FindSubmatch(data)
 	if len(match) != 3 {
-		c.writeResponse(args.Id(), "NO Incorrect username/password")
+		c.writeResponse(args.ID(), "NO Incorrect username/password")
 		return
 	}
 	c.user, err = c.srv.mailstore.Authenticate(string(match[1]), string(match[2]))
 	if err != nil {
-		c.writeResponse(args.Id(), "NO Incorrect username/password")
+		c.writeResponse(args.ID(), "NO Incorrect username/password")
 		return
 	}
 	c.setState(stateAuthenticated)
-	c.writeResponse(args.Id(), "OK Authenticated")
+	c.writeResponse(args.ID(), "OK Authenticated")
 }

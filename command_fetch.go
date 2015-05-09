@@ -42,11 +42,11 @@ func cmdFetch(args commandArgs, c *Conn) {
 	fetchParams, err := fetch(fetchParamString, c, msg)
 	if err != nil {
 		if err == ErrUnrecognisedParameter {
-			c.writeResponse(args.Id(), "BAD Unrecognised Parameter")
+			c.writeResponse(args.ID(), "BAD Unrecognised Parameter")
 			return
 		}
 
-		c.writeResponse(args.Id(), "BAD")
+		c.writeResponse(args.ID(), "BAD")
 		return
 	}
 
@@ -56,9 +56,9 @@ func cmdFetch(args commandArgs, c *Conn) {
 
 	c.writeResponse("", fullReply)
 	if searchByUID {
-		c.writeResponse(args.Id(), "OK UID FETCH Completed")
+		c.writeResponse(args.ID(), "OK UID FETCH Completed")
 	} else {
-		c.writeResponse(args.Id(), "OK FETCH Completed")
+		c.writeResponse(args.ID(), "OK FETCH Completed")
 	}
 }
 
