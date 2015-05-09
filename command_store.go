@@ -9,7 +9,6 @@ const storeArgSilent int = 3
 const storeArgFlags int = 4
 
 func cmdStoreFlags(args commandArgs, c *Conn) {
-	args.DebugPrint("STORE command")
 	operation := args.Arg(storeArgOperation)
 	flags := args.Arg(storeArgFlags)
 	uid := args.Arg(storeArgUID) == "UID "
