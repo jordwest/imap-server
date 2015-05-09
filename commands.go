@@ -44,6 +44,10 @@ var commands []command
 func init() {
 	commands = make([]command, 0)
 
+	// A sequence set consists only of digits, colons, stars and commas.
+	// eg: 5,9,10:15,256:*,566
+	sequenceSet := "[\\d\\:\\*\\,]+"
+
 	registerCommand("(?i:CAPABILITY)", cmdCapability)
 	registerCommand("(?i:LOGIN) \"([A-z0-9]+)\" \"([A-z0-9]+)\"", cmdLogin)
 	registerCommand("(?i:AUTHENTICATE PLAIN)", cmdAuthPlain)
@@ -59,7 +63,7 @@ func init() {
 	// STORE 2:4 +FLAGS (\Deleted)       Mark messages as deleted
 	// STORE 2:4 -FLAGS (\Seen)          Mark messages as unseen
 	// STORE 2:4 FLAGS (\Seen \Deleted)  Replace flags
-	registerCommand("((?i)UID )?(?i:STORE) (?:(\\d+)(?:\\:([\\*\\d]+))?) ([\\+\\-])?(?i:FLAGS(\\.SILENT)?) \\(?([\\\\A-z0-9]+)\\)?", cmdStoreFlags)
+	registerCommand("((?i)UID )?(?i:STORE) ("+sequenceSet+") ([\\+\\-])?(?i:FLAGS(\\.SILENT)?) \\(?([\\\\A-z0-9]+)\\)?", cmdStoreFlags)
 }
 
 func registerCommand(matchExpr string, handleFunc func(commandArgs, *Conn)) error {

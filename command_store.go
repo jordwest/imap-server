@@ -1,16 +1,22 @@
 package imap
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-const storeArgRange int = 2
-const storeArgOperation int = 3
-const storeArgSilent int = 4
-const storeArgFlags int = 5
+const storeArgUID int = 0
+const storeArgRange int = 1
+const storeArgOperation int = 2
+const storeArgSilent int = 3
+const storeArgFlags int = 4
 
 func cmdStoreFlags(args commandArgs, c *Conn) {
-	fmt.Printf("STORE command args: %+v\n\n", args)
+	fmt.Printf("STORE command args: %s\n\n", strings.Join(args, ","))
+	args.DebugPrint("STORE command")
 	operation := args.Arg(storeArgOperation)
 	flags := args.Arg(storeArgFlags)
+	uid := args.Arg(storeArgUID) == "UID "
 
 	silent := false
 	if args.Arg(storeArgSilent) == ".SILENT" {
@@ -18,6 +24,10 @@ func cmdStoreFlags(args commandArgs, c *Conn) {
 	}
 	if silent {
 		fmt.Printf("Silently ")
+	}
+
+	if uid {
+		fmt.Printf("(searching by UID) ")
 	}
 
 	if operation == "+" {
