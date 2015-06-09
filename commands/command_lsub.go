@@ -1,4 +1,4 @@
-package imap
+package commands
 
 func cmdLSub(args commandArgs, c *Conn) {
 	for _, mailbox := range c.user.Mailboxes() {

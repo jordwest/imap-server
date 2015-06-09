@@ -1,4 +1,4 @@
-package imap
+package commands
 
 const listArgSelector int = 1
 
