@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/textproto"
+
+	"github.com/jordwest/imap-server/mailstore"
 )
 
 // Server represents an IMAP server instance
@@ -15,7 +17,7 @@ type Server struct {
 	listener   net.Listener
 	commands   []command
 	Transcript io.Writer
-	mailstore  Mailstore
+	mailstore  mailstore.Mailstore
 }
 
 // NewServer initialises a new Server. Note that this does not start the server.

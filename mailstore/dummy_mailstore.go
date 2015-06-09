@@ -97,7 +97,7 @@ type DummyMailbox struct {
 // DebugPrintMailbox prints out all messages in the mailbox to the command line
 // for debugging purposes
 func (m DummyMailbox) DebugPrintMailbox() {
-	util.DebugPrintMessages(m.messages)
+	debugPrintMessages(m.messages)
 }
 
 // Name returns the Mailbox's name
@@ -358,4 +358,15 @@ func (m DummyMessage) Keywords() []string {
 	var f []string
 	//f[0] = "Test"
 	return f
+}
+
+func debugPrintMessages(messages []Message) {
+	fmt.Printf("SeqNo  |UID    |From      |To        |Subject\n")
+	fmt.Printf("-------+-------+----------+----------+-------\n")
+	for _, msg := range messages {
+		_, from, _ := msg.Header().FindKey("from")
+		_, to, _ := msg.Header().FindKey("to")
+		_, subject, _ := msg.Header().FindKey("subject")
+		fmt.Printf("%-7d|%-7d|%-10.10s|%-10.10s|%s\n", msg.SequenceNumber(), msg.UID(), from, to, subject)
+	}
 }
