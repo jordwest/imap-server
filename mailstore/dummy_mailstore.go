@@ -359,21 +359,3 @@ func (m DummyMessage) Keywords() []string {
 	//f[0] = "Test"
 	return f
 }
-
-// IsSeen returns true if the seen flag is set, false otherwise
-func (m DummyMessage) IsSeen() bool { return m.seen }
-
-// IsAnswered returns true if the Answered flag is set, false otherwise
-func (m DummyMessage) IsAnswered() bool { return m.answered }
-
-// IsFlagged returns true if the Flagged flag is set, false otherwise
-func (m DummyMessage) IsFlagged() bool { return m.flagged }
-
-// IsDeleted returns true if the Deleted flag is set, false otherwise
-func (m DummyMessage) IsDeleted() bool { return m.deleted }
-
-// IsDraft returns true if the Draft flag is set, false otherwise
-func (m DummyMessage) IsDraft() bool { return m.draft }
-
-// IsRecent returns true if the Recent flag is set, false otherwise
-func (m DummyMessage) IsRecent() bool { return m.recent }

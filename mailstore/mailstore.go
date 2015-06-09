@@ -81,10 +81,9 @@ type Message interface {
 	// Return the list of custom keywords/flags for this message
 	Keywords() []string
 
-	IsSeen() bool
-	IsAnswered() bool
-	IsFlagged() bool
-	IsDeleted() bool
-	IsDraft() bool
-	IsRecent() bool
+	// Get the flags for this message
+	Flags() types.Flags
+
+	// Overwrite the flags for this message
+	SetFlags(types.Flags)
 }
