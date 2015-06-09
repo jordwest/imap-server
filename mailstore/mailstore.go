@@ -84,6 +84,12 @@ type Message interface {
 	// Get the flags for this message
 	Flags() types.Flags
 
-	// Overwrite the flags for this message
-	SetFlags(types.Flags)
+	// Overwrite the flags for this message and return the updated message
+	OverwriteFlags(types.Flags) Message
+
+	// Write the flags for this message and return the updated message
+	AddFlags(types.Flags) Message
+
+	// Write the flags for this message and return the updated message
+	RemoveFlags(types.Flags) Message
 }

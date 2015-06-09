@@ -88,29 +88,6 @@ func writeMailboxInfo(c *Conn, m mailstore.Mailbox) {
 	fmt.Fprintf(c, "* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n")
 }
 
-func messageFlags(msg Message) []string {
-	flags := make([]string, 0, 6) // Up to 6 flags
-	if msg.IsAnswered() {
-		flags = append(flags, "\\Answered")
-	}
-	if msg.IsSeen() {
-		flags = append(flags, "\\Seen")
-	}
-	if msg.IsRecent() {
-		flags = append(flags, "\\Recent")
-	}
-	if msg.IsDeleted() {
-		flags = append(flags, "\\Deleted")
-	}
-	if msg.IsDraft() {
-		flags = append(flags, "\\Draft")
-	}
-	if msg.IsFlagged() {
-		flags = append(flags, "\\Flagged")
-	}
-	return flags
-}
-
 func cmdNA(args commandArgs, c *Conn) {
 	c.writeResponse(args.ID(), "BAD Not implemented")
 }

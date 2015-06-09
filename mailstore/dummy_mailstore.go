@@ -125,7 +125,7 @@ func (m DummyMailbox) LastUID() uint32 {
 func (m DummyMailbox) Recent() uint32 {
 	var count uint32
 	for _, message := range m.messages {
-		if message.IsRecent() {
+		if message.Flags().HasFlags(types.FlagRecent) {
 			count++
 		}
 	}
@@ -140,7 +140,7 @@ func (m DummyMailbox) Messages() uint32 { return uint32(len(m.messages)) }
 func (m DummyMailbox) Unseen() uint32 {
 	count := uint32(0)
 	for _, message := range m.messages {
-		if !message.IsSeen() {
+		if !message.Flags().HasFlags(types.FlagSeen) {
 			count++
 		}
 	}
@@ -305,9 +305,9 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 	newMessage := DummyMessage{
 		sequenceNumber: uint32(len(m.messages) + 1),
 		uid:            uid,
-		recent:         true,
 		header:         hdr,
 	}
+	newMessage = newMessage.AddFlags(types.FlagRecent).(DummyMessage)
 	m.messages = append(m.messages, newMessage)
 }
 
@@ -316,12 +316,7 @@ type DummyMessage struct {
 	sequenceNumber uint32
 	uid            uint32
 	header         types.MIMEHeader
-	seen           bool
-	deleted        bool
-	recent         bool
-	answered       bool
-	flagged        bool
-	draft          bool
+	flags          types.Flags
 }
 
 // Header returns the message's MIME Header
@@ -358,6 +353,25 @@ func (m DummyMessage) Keywords() []string {
 	var f []string
 	//f[0] = "Test"
 	return f
+}
+
+func (m DummyMessage) Flags() types.Flags {
+	return m.flags
+}
+
+func (m DummyMessage) OverwriteFlags(newFlags types.Flags) Message {
+	m.flags = newFlags
+	return m
+}
+
+func (m DummyMessage) AddFlags(newFlags types.Flags) Message {
+	m.flags.SetFlags(newFlags)
+	return m
+}
+
+func (m DummyMessage) RemoveFlags(newFlags types.Flags) Message {
+	m.flags.ResetFlags(newFlags)
+	return m
 }
 
 func debugPrintMessages(messages []Message) {

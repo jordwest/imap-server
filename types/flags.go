@@ -1,5 +1,7 @@
 package types
 
+import "strings"
+
 // Flags provide information on flags that are attached to a message
 type Flags int32
 
@@ -32,4 +34,33 @@ func (f Flags) SetFlags(add Flags) Flags {
 
 func (f Flags) HasFlags(check Flags) bool {
 	return (f & check) == check
+}
+
+// Convert flags to list of IMAP format flags
+func (f Flags) Strings() []string {
+	flags := make([]string, 0, 6) // Up to 6 flags
+	if f.HasFlags(FlagAnswered) {
+		flags = append(flags, "\\Answered")
+	}
+	if f.HasFlags(FlagSeen) {
+		flags = append(flags, "\\Seen")
+	}
+	if f.HasFlags(FlagRecent) {
+		flags = append(flags, "\\Recent")
+	}
+	if f.HasFlags(FlagDeleted) {
+		flags = append(flags, "\\Deleted")
+	}
+	if f.HasFlags(FlagDraft) {
+		flags = append(flags, "\\Draft")
+	}
+	if f.HasFlags(FlagFlagged) {
+		flags = append(flags, "\\Flagged")
+	}
+	return flags
+}
+
+// Convert flags to IMAP flag list string
+func (f Flags) String() string {
+	return strings.Join(f.Strings(), " ")
 }
