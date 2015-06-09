@@ -3,7 +3,7 @@ package conn
 import "fmt"
 
 func cmdStatus(args commandArgs, c *Conn) {
-	mailbox, err := c.user.MailboxByName(args.Arg(0))
+	mailbox, err := c.User.MailboxByName(args.Arg(0))
 	if err != nil {
 		c.writeResponse(args.ID(), "NO "+err.Error())
 		return

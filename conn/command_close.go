@@ -1,7 +1,7 @@
 package conn
 
 func cmdClose(args commandArgs, c *Conn) {
-	c.setState(stateAuthenticated)
-	c.selectedMailbox = nil
+	c.SetState(StateAuthenticated)
+	c.SelectedMailbox = nil
 	c.writeResponse(args.ID(), "OK CLOSE Completed")
 }

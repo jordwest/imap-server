@@ -33,9 +33,9 @@ func cmdFetch(args commandArgs, c *Conn) {
 	var msg mailstore.Message
 	if searchByUID {
 		fmt.Printf("Searching by UID\n")
-		msg = c.selectedMailbox.MessageByUID(uint32(start))
+		msg = c.SelectedMailbox.MessageByUID(uint32(start))
 	} else {
-		msg = c.selectedMailbox.MessageBySequenceNumber(uint32(start))
+		msg = c.SelectedMailbox.MessageBySequenceNumber(uint32(start))
 	}
 
 	fetchParamString := args.Arg(3)

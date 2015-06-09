@@ -27,11 +27,11 @@ func cmdAuthPlain(args commandArgs, c *Conn) {
 		c.writeResponse(args.ID(), "NO Incorrect username/password")
 		return
 	}
-	c.user, err = c.srv.mailstore.Authenticate(string(match[1]), string(match[2]))
+	c.User, err = c.Mailstore.Authenticate(string(match[1]), string(match[2]))
 	if err != nil {
 		c.writeResponse(args.ID(), "NO Incorrect username/password")
 		return
 	}
-	c.setState(stateAuthenticated)
+	c.SetState(stateAuthenticated)
 	c.writeResponse(args.ID(), "OK Authenticated")
 }

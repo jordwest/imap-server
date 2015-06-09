@@ -14,11 +14,11 @@ import (
 type connState int
 
 const (
-	stateNew connState = iota
-	stateNotAuthenticated
-	stateAuthenticated
-	stateSelected
-	stateLoggedOut
+	StateNew connState = iota
+	StateNotAuthenticated
+	StateAuthenticated
+	StateSelected
+	StateLoggedOut
 )
 
 const lineEnding string = "\r\n"
@@ -26,15 +26,23 @@ const lineEnding string = "\r\n"
 // Conn represents a client connection to the IMAP server
 type Conn struct {
 	state           connState
-	srv             *Server // Pointer to the IMAP server to which this connection belongs
-	rwc             net.Conn
+	Rwc             net.Conn
 	Transcript      io.Writer
 	recvReq         chan string
-	user            mailstore.User
-	selectedMailbox mailstore.Mailbox
+	Mailstore       mailstore.Mailstore // Pointer to the IMAP server's mailstore to which this connection belongs
+	User            mailstore.User
+	SelectedMailbox mailstore.Mailbox
 }
 
-func (c *Conn) setState(state connState) {
+func NewConn(mailstore mailstore.Mailstore, netConn net.Conn, transcript io.Writer) (c *Conn) {
+	c = new(Conn)
+	c.Mailstore = mailstore
+	c.Rwc = netConn
+	c.Transcript = transcript
+	return c
+}
+
+func (c *Conn) SetState(state connState) {
 	c.state = state
 }
 
@@ -53,7 +61,7 @@ func (c *Conn) handleRequest(req string) {
 func (c *Conn) Write(p []byte) (n int, err error) {
 	fmt.Fprintf(c.Transcript, "S: %s", p)
 
-	return c.rwc.Write(p)
+	return c.Rwc.Write(p)
 }
 
 // Write a response to the client
@@ -74,27 +82,27 @@ func (c *Conn) sendWelcome() error {
 		return errors.New("Welcome already sent")
 	}
 	c.writeResponse("", "OK IMAP4rev1 Service Ready")
-	c.setState(stateNotAuthenticated)
+	c.SetState(stateNotAuthenticated)
 	return nil
 }
 
 // Close forces the server to close the client's connection
 func (c *Conn) Close() error {
 	fmt.Fprintf(c.Transcript, "Server closing connection\n")
-	return c.rwc.Close()
+	return c.Rwc.Close()
 }
 
 // Start tells the server to start communicating with the client (after
 // the connection has been opened)
 func (c *Conn) Start() error {
-	if c.rwc == nil {
+	if c.Rwc == nil {
 		return errors.New("No connection exists")
 	}
 
 	c.recvReq = make(chan string)
 
 	go func(ch chan string) {
-		scanner := bufio.NewScanner(c.rwc)
+		scanner := bufio.NewScanner(c.Rwc)
 		for ok := scanner.Scan(); ok == true; ok = scanner.Scan() {
 			text := scanner.Text()
 			ch <- text

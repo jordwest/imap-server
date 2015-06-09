@@ -8,7 +8,7 @@ func cmdList(args commandArgs, c *Conn) {
 		c.writeResponse("", "LIST (\\Noselect) \"/\" \"\"")
 	} else if args.Arg(listArgSelector) == "*" {
 		// List all mailboxes requested
-		for _, mailbox := range c.user.Mailboxes() {
+		for _, mailbox := range c.User.Mailboxes() {
 			c.writeResponse("", "LIST () \"/\" \""+mailbox.Name()+"\"")
 		}
 	}
