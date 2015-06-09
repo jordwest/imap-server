@@ -96,7 +96,7 @@ func (s *Server) newConn(netConn net.Conn) (c *conn.Conn, err error) {
 	return c, nil
 }
 
-// NewTestConnection is for rest facilitation.
+// NewTestConnection is for test facilitation.
 // Creates a server and then dials the server, returning the connection,
 // allowing test to inject state and wait for an expected response
 // The connection must be started manually with `go conn.Start()`
