@@ -1,4 +1,4 @@
-package commands
+package conn
 
 func cmdLSub(args commandArgs, c *Conn) {
 	for _, mailbox := range c.user.Mailboxes() {

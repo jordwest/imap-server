@@ -1,4 +1,4 @@
-package commands
+package conn
 
 func cmdClose(args commandArgs, c *Conn) {
 	c.setState(stateAuthenticated)

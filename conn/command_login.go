@@ -1,4 +1,4 @@
-package commands
+package conn
 
 // Handles PLAIN text LOGIN command
 func cmdLogin(args commandArgs, c *Conn) {

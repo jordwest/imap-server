@@ -1,4 +1,4 @@
-package commands
+package conn
 
 const listArgSelector int = 1
 

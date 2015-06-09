@@ -1,4 +1,4 @@
-package commands
+package conn
 
 // Handles a CAPABILITY command
 func cmdCapability(args commandArgs, c *Conn) {
