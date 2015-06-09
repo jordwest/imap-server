@@ -4,12 +4,12 @@ package types
 type Flags int32
 
 const (
-	Seen Flags = 1 << iota
-	Answered
-	Flagged
-	Deleted
-	Draft
-	Recent // Can not be set by client!
+	FlagSeen Flags = 1 << iota
+	FlagAnswered
+	FlagFlagged
+	FlagDeleted
+	FlagDraft
+	FlagRecent // Can not be set by client!
 )
 
 func CombineFlags(flags ...Flags) Flags {
