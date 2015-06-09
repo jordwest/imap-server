@@ -325,7 +325,7 @@ type DummyMessage struct {
 }
 
 // Header returns the message's MIME Header
-func (m DummyMessage) Header() (hdr MIMEHeader) {
+func (m DummyMessage) Header() (hdr types.MIMEHeader) {
 	return m.header
 }
 

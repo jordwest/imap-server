@@ -7,6 +7,8 @@ import (
 	"io"
 	"net"
 	"strings"
+
+	"github.com/jordwest/imap-server/mailstore"
 )
 
 type connState int
@@ -28,8 +30,8 @@ type Conn struct {
 	rwc             net.Conn
 	Transcript      io.Writer
 	recvReq         chan string
-	user            User
-	selectedMailbox Mailbox
+	user            mailstore.User
+	selectedMailbox mailstore.Mailbox
 }
 
 func (c *Conn) setState(state connState) {

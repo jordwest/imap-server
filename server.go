@@ -22,7 +22,7 @@ type Server struct {
 
 // NewServer initialises a new Server. Note that this does not start the server.
 // You must called either Listen() followed by Serve() or call ListenAndServe()
-func NewServer(store Mailstore) *Server {
+func NewServer(store mailstore.Mailstore) *Server {
 	s := &Server{
 		Addr:       ":143",
 		commands:   make([]command, 0),
@@ -106,7 +106,7 @@ func (s *Server) newConn(conn net.Conn) (c *Conn, err error) {
 // The connection must be started manually with `go conn.Start()`
 // once desired state has been injected
 func NewTestConnection(transcript io.Writer) (s *Server, clientConn *textproto.Conn, serverConn *Conn, server *Server, err error) {
-	mStore := NewDummyMailstore()
+	mStore := mailstore.NewDummyMailstore()
 	s = NewServer(mStore)
 	s.Addr = ":10143"
 	s.Transcript = transcript

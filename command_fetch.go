@@ -6,6 +6,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/jordwest/imap-server/mailstore"
+	"github.com/jordwest/imap-server/types"
+	"github.com/jordwest/imap-server/util"
 )
 
 var registeredFetchParams []fetchParamDefinition
@@ -17,7 +21,7 @@ var ErrUnrecognisedParameter = errors.New("Unrecognised Parameter")
 
 type fetchParamDefinition struct {
 	re      *regexp.Regexp
-	handler func([]string, *Conn, Message, bool) string
+	handler func([]string, *Conn, mailstore.Message, bool) string
 }
 
 func cmdFetch(args commandArgs, c *Conn) {
@@ -26,7 +30,7 @@ func cmdFetch(args commandArgs, c *Conn) {
 	searchByUID := args.Arg(0) == "UID "
 
 	// Fetch the messages
-	var msg Message
+	var msg mailstore.Message
 	if searchByUID {
 		fmt.Printf("Searching by UID\n")
 		msg = c.selectedMailbox.MessageByUID(uint32(start))
@@ -64,8 +68,8 @@ func cmdFetch(args commandArgs, c *Conn) {
 
 // Fetch requested params from a given message
 // eg fetch("UID BODY[TEXT] RFC822.SIZE", c, message)
-func fetch(params string, c *Conn, m Message) (string, error) {
-	paramList := splitParams(params)
+func fetch(params string, c *Conn, m mailstore.Message) (string, error) {
+	paramList := util.SplitParams(params)
 
 	// Prepare the list of responses
 	responseParams := make([]string, 0, len(paramList))
@@ -81,7 +85,7 @@ func fetch(params string, c *Conn, m Message) (string, error) {
 }
 
 // Match a single fetch parameter and return the data
-func fetchParam(param string, c *Conn, m Message) (string, error) {
+func fetchParam(param string, c *Conn, m mailstore.Message) (string, error) {
 	peek := false
 	if peekRE.MatchString(param) {
 		peek = true
@@ -110,7 +114,7 @@ func init() {
 	registerFetchParam("BODY(?:\\.PEEK)?\\[\\]", fetchFullText)
 }
 
-func registerFetchParam(regex string, handler func([]string, *Conn, Message, bool) string) {
+func registerFetchParam(regex string, handler func([]string, *Conn, mailstore.Message, bool) string) {
 	newParam := fetchParamDefinition{
 		re:      regexp.MustCompile(regex),
 		handler: handler,
@@ -119,26 +123,26 @@ func registerFetchParam(regex string, handler func([]string, *Conn, Message, boo
 }
 
 // Fetch the UID of the mail message
-func fetchUID(args []string, c *Conn, m Message, peekOnly bool) string {
+func fetchUID(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
 	return fmt.Sprintf("UID %d", m.UID())
 }
 
-func fetchFlags(args []string, c *Conn, m Message, peekOnly bool) string {
-	flags := append(messageFlags(m), m.Keywords()...)
+func fetchFlags(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
+	flags := append(m.Flags().Strings(), m.Keywords()...)
 	flagList := strings.Join(flags, " ")
 	return fmt.Sprintf("FLAGS (%s)", flagList)
 }
 
-func fetchRfcSize(args []string, c *Conn, m Message, peekOnly bool) string {
+func fetchRfcSize(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
 	return fmt.Sprintf("RFC822.SIZE %d", m.Size())
 }
 
-func fetchInternalDate(args []string, c *Conn, m Message, peekOnly bool) string {
-	dateStr := m.InternalDate().Format(internalDate)
+func fetchInternalDate(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
+	dateStr := m.InternalDate().Format(util.InternalDate)
 	return fmt.Sprintf("INTERNALDATE \"%s\"", dateStr)
 }
 
-func fetchHeaders(args []string, c *Conn, m Message, peekOnly bool) string {
+func fetchHeaders(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
 	hdr := fmt.Sprintf("\r\n%s\r\n\r\n", m.Header())
 	hdrLen := len(hdr)
 
@@ -150,13 +154,13 @@ func fetchHeaders(args []string, c *Conn, m Message, peekOnly bool) string {
 	return fmt.Sprintf("BODY%s[HEADER] {%d}%s", peekStr, hdrLen, hdr)
 }
 
-func fetchHeaderSpecificFields(args []string, c *Conn, m Message, peekOnly bool) string {
+func fetchHeaderSpecificFields(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
 	if !peekOnly {
 		fmt.Printf("TODO: Peek not requested, mark all as non-recent\n")
 	}
 	fields := strings.Split(args[1], " ")
 	hdrs := m.Header()
-	requestedHeaders := make(MIMEHeader)
+	requestedHeaders := make(types.MIMEHeader)
 	replyFieldList := make([]string, len(fields))
 	for i, key := range fields {
 		replyFieldList[i] = "\"" + key + "\""
@@ -175,7 +179,7 @@ func fetchHeaderSpecificFields(args []string, c *Conn, m Message, peekOnly bool)
 
 }
 
-func fetchBody(args []string, c *Conn, m Message, peekOnly bool) string {
+func fetchBody(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
 	body := fmt.Sprintf("\r\n%s\r\n", m.Body())
 	bodyLen := len(body)
 
@@ -183,7 +187,7 @@ func fetchBody(args []string, c *Conn, m Message, peekOnly bool) string {
 		bodyLen, body)
 }
 
-func fetchFullText(args []string, c *Conn, m Message, peekOnly bool) string {
+func fetchFullText(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
 	mail := fmt.Sprintf("\r\n%s\r\n\r\n%s\r\n", m.Header(), m.Body())
 	mailLen := len(mail)
 

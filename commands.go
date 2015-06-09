@@ -3,6 +3,8 @@ package imap
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/jordwest/imap-server/mailstore"
 )
 
 type command struct {
@@ -77,7 +79,7 @@ func registerCommand(matchExpr string, handleFunc func(commandArgs, *Conn)) erro
 }
 
 // Write out the info for a mailbox (used in both SELECT and EXAMINE)
-func writeMailboxInfo(c *Conn, m Mailbox) {
+func writeMailboxInfo(c *Conn, m mailstore.Mailbox) {
 	fmt.Fprintf(c, "* %d EXISTS\r\n", m.Messages())
 	fmt.Fprintf(c, "* %d RECENT\r\n", m.Recent())
 	fmt.Fprintf(c, "* OK [UNSEEN %d]\r\n", m.Unseen())
