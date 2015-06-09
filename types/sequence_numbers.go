@@ -1,4 +1,4 @@
-package imap
+package types
 
 import (
 	"fmt"
@@ -54,8 +54,8 @@ func (s SequenceNumber) Value() (uint32, error) {
 
 // SequenceRange represents a range of identifiers. eg in IMAP: 5:9 or 15:*
 type SequenceRange struct {
-	min SequenceNumber
-	max SequenceNumber
+	Min SequenceNumber
+	Max SequenceNumber
 }
 
 // SequenceSet represents set of sequence ranges. eg in IMAP: 1,3,5:9,18:*
@@ -99,12 +99,12 @@ func interpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err
 
 	// Reduce *:* to *
 	if first.Last() && second.Last() {
-		return SequenceRange{min: SequenceNumber("*"), max: SequenceNumber("")}, nil
+		return SequenceRange{Min: SequenceNumber("*"), Max: SequenceNumber("")}, nil
 	}
 
-	// Ensure "*" is always placed in 'max'
+	// Ensure "*" is always placed in 'Max'
 	if first.Last() && !second.Nil() {
-		return SequenceRange{min: second, max: first}, nil
+		return SequenceRange{Min: second, Max: first}, nil
 	}
 
 	// If both sequence numbers are integer values, we need to sort them
@@ -112,11 +112,11 @@ func interpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err
 		firstVal, _ := first.Value()
 		secondVal, _ := second.Value()
 		if firstVal > secondVal {
-			return SequenceRange{min: second, max: first}, nil
+			return SequenceRange{Min: second, Max: first}, nil
 		}
 	}
 
-	return SequenceRange{min: first, max: second}, nil
+	return SequenceRange{Min: first, Max: second}, nil
 }
 
 func interpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {

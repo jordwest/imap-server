@@ -1,9 +1,11 @@
-package imap
+package mailstore
 
 import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/jordwest/imap-server/types"
 )
 
 // DummyMailstore is an in-memory mail storage for testing purposes and to
@@ -166,7 +168,7 @@ func (m DummyMailbox) MessageByUID(uidno uint32) Message {
 
 // MessageSetByUID returns a slice of messages given a set of UID ranges.
 // eg 1,5,9,28:140,190:*
-func (m DummyMailbox) MessageSetByUID(set SequenceSet) []Message {
+func (m DummyMailbox) MessageSetByUID(set types.SequenceSet) []Message {
 	var msgs []Message
 
 	// If the mailbox is empty, return empty array
@@ -175,26 +177,26 @@ func (m DummyMailbox) MessageSetByUID(set SequenceSet) []Message {
 	}
 
 	for _, msgRange := range set {
-		// If min is "*", meaning the last UID in the mailbox, max should
+		// If Min is "*", meaning the last UID in the mailbox, Max should
 		// always be Nil
-		if msgRange.min.Last() {
+		if msgRange.Min.Last() {
 			// Return the last message in the mailbox
 			msgs = append(msgs, m.MessageByUID(m.LastUID()))
 			continue
 		}
 
-		start, err := msgRange.min.Value()
+		start, err := msgRange.Min.Value()
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return msgs
 		}
 
-		// If no max is specified, the sequence number must be either a fixed
+		// If no Max is specified, the sequence number must be either a fixed
 		// sequence number or
-		if msgRange.max.Nil() {
+		if msgRange.Max.Nil() {
 			var uid uint32
 			// Fetch specific message by sequence number
-			uid, err = msgRange.min.Value()
+			uid, err = msgRange.Min.Value()
 			msgs = append(msgs, m.MessageByUID(uid))
 			if err != nil {
 				fmt.Printf("Error: %s\n", err.Error())
@@ -204,10 +206,10 @@ func (m DummyMailbox) MessageSetByUID(set SequenceSet) []Message {
 		}
 
 		var end uint32
-		if msgRange.max.Last() {
+		if msgRange.Max.Last() {
 			end = m.LastUID()
 		} else {
-			end, err = msgRange.max.Value()
+			end, err = msgRange.Max.Value()
 		}
 
 		// Note this is very inefficient when
@@ -230,7 +232,7 @@ func (m DummyMailbox) MessageSetByUID(set SequenceSet) []Message {
 
 // MessageSetBySequenceNumber returns a slice of messages given a set of
 // sequence number ranges
-func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
+func (m DummyMailbox) MessageSetBySequenceNumber(set types.SequenceSet) []Message {
 	var msgs []Message
 
 	// If the mailbox is empty, return empty array
@@ -240,26 +242,26 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
 
 	// For each sequence range in the sequence set
 	for _, msgRange := range set {
-		// If min is "*", meaning the last message in the mailbox, max should
+		// If Min is "*", meaning the last message in the mailbox, Max should
 		// always be Nil
-		if msgRange.min.Last() {
+		if msgRange.Min.Last() {
 			// Return the last message in the mailbox
 			msgs = append(msgs, m.MessageBySequenceNumber(m.Messages()))
 			continue
 		}
 
-		start, err := msgRange.min.Value()
+		start, err := msgRange.Min.Value()
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return msgs
 		}
 
-		// If no max is specified, the sequence number must be either a fixed
+		// If no Max is specified, the sequence number must be either a fixed
 		// sequence number or
-		if msgRange.max.Nil() {
+		if msgRange.Max.Nil() {
 			var sequenceNo uint32
 			// Fetch specific message by sequence number
-			sequenceNo, err = msgRange.min.Value()
+			sequenceNo, err = msgRange.Min.Value()
 			if err != nil {
 				fmt.Printf("Error: %s\n", err.Error())
 				return msgs
@@ -269,10 +271,10 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set SequenceSet) []Message {
 		}
 
 		var end uint32
-		if msgRange.max.Last() {
+		if msgRange.Max.Last() {
 			end = uint32(len(m.messages))
 		} else {
-			end, err = msgRange.max.Value()
+			end, err = msgRange.Max.Value()
 		}
 
 		// Note this is very inefficient when
@@ -312,7 +314,7 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 type DummyMessage struct {
 	sequenceNumber uint32
 	uid            uint32
-	header         MIMEHeader
+	header         types.MIMEHeader
 	seen           bool
 	deleted        bool
 	recent         bool

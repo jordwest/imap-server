@@ -1,4 +1,4 @@
-package imap
+package mailstore_test
 
 import "testing"
 

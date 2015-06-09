@@ -1,6 +1,10 @@
-package imap
+package mailstore
 
-import "time"
+import (
+	"time"
+
+	"github.com/jordwest/imap-server/types"
+)
 
 // Mailstore is an interface to be implemented to provide mail storage
 type Mailstore interface {
@@ -46,17 +50,17 @@ type Mailbox interface {
 	MessageByUID(uidno uint32) Message
 
 	// Get messages that belong to a set of ranges of UIDs
-	MessageSetByUID(set SequenceSet) []Message
+	MessageSetByUID(set types.SequenceSet) []Message
 
 	// Get messages that belong to a set of ranges of sequence numbers
-	MessageSetBySequenceNumber(set SequenceSet) []Message
+	MessageSetBySequenceNumber(set types.SequenceSet) []Message
 }
 
 // Message represents a standard email message
 type Message interface {
 	// Return the message's MIME headers as a map in format
 	// key: value
-	Header() MIMEHeader
+	Header() types.MIMEHeader
 
 	// Return the unique id of the email
 	UID() uint32

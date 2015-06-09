@@ -1,4 +1,4 @@
-package imap
+package types
 
 import (
 	"fmt"

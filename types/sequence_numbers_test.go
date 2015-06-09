@@ -1,4 +1,4 @@
-package imap
+package types_test
 
 import (
 	"testing"
