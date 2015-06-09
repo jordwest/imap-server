@@ -22,6 +22,26 @@ func CombineFlags(flags ...Flags) Flags {
 	return returnFlags
 }
 
+func FlagsFromString(imapFlagString string) (f Flags) {
+	for _, flag := range strings.Split(imapFlagString, " ") {
+		switch flag {
+		case "\\Seen":
+			f = f.SetFlags(FlagSeen)
+		case "\\Answered":
+			f = f.SetFlags(FlagAnswered)
+		case "\\Flagged":
+			f = f.SetFlags(FlagFlagged)
+		case "\\Deleted":
+			f = f.SetFlags(FlagDeleted)
+		case "\\Draft":
+			f = f.SetFlags(FlagDraft)
+		case "\\Recent":
+			f = f.SetFlags(FlagRecent)
+		}
+	}
+	return f
+}
+
 func (f Flags) ResetFlags(remove Flags) Flags {
 	f ^= remove
 	return f

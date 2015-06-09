@@ -88,7 +88,7 @@ func init() {
 		"$")
 }
 
-func interpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err error) {
+func InterpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err error) {
 	result := rangeRegexp.FindStringSubmatch(imapMessageRange)
 	if len(result) == 0 {
 		return SequenceRange{}, errInvalidRangeString(imapMessageRange)
@@ -119,7 +119,7 @@ func interpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err
 	return SequenceRange{Min: first, Max: second}, nil
 }
 
-func interpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {
+func InterpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {
 	// Ensure the sequence set is valid
 	if !setRegexp.MatchString(imapSequenceSet) {
 		return SequenceSet{}, errInvalidSequenceSetString(imapSequenceSet)
@@ -129,7 +129,7 @@ func interpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error
 
 	seqSet = make(SequenceSet, len(ranges))
 	for index, rng := range ranges {
-		seqSet[index], err = interpretMessageRange(rng)
+		seqSet[index], err = InterpretMessageRange(rng)
 		if err != nil {
 			return seqSet, err
 		}

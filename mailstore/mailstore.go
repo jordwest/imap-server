@@ -92,4 +92,7 @@ type Message interface {
 
 	// Write the flags for this message and return the updated message
 	RemoveFlags(types.Flags) Message
+
+	// Save any changes to the message
+	Save() error
 }

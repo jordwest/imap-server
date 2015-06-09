@@ -61,7 +61,7 @@ func init() {
 	registerCommand("(?i:SELECT) \"?([A-z0-9]+)?\"?", cmdSelect)
 	registerCommand("(?i:EXAMINE) \"?([A-z0-9]+)\"?", cmdExamine)
 	registerCommand("(?i:STATUS) \"?([A-z0-9/]+)\"? \\(([A-z\\s]+)\\)", cmdStatus)
-	registerCommand("((?i)UID )?(?i:FETCH) (?:(\\d+)(?:\\:([\\*\\d]+))?) \\(([A-z0-9\\s\\(\\)\\[\\]\\.-]+)\\)", cmdFetch)
+	registerCommand("((?i)UID )?(?i:FETCH) ("+sequenceSet+") \\(([A-z0-9\\s\\(\\)\\[\\]\\.-]+)\\)", cmdFetch)
 	// STORE 2:4 +FLAGS (\Deleted)       Mark messages as deleted
 	// STORE 2:4 -FLAGS (\Seen)          Mark messages as unseen
 	// STORE 2:4 FLAGS (\Seen \Deleted)  Replace flags

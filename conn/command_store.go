@@ -1,6 +1,12 @@
 package conn
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/jordwest/imap-server/mailstore"
+	"github.com/jordwest/imap-server/types"
+)
 
 const storeArgUID int = 0
 const storeArgRange int = 1
@@ -11,7 +17,8 @@ const storeArgFlags int = 4
 func cmdStoreFlags(args commandArgs, c *Conn) {
 	operation := args.Arg(storeArgOperation)
 	flags := args.Arg(storeArgFlags)
-	uid := args.Arg(storeArgUID) == "UID "
+	uid := strings.ToUpper(args.Arg(storeArgUID)) == "UID "
+	seqSetStr := args.Arg(storeArgRange)
 
 	silent := false
 	if args.Arg(storeArgSilent) == ".SILENT" {
@@ -21,16 +28,50 @@ func cmdStoreFlags(args commandArgs, c *Conn) {
 		fmt.Printf("Silently ")
 	}
 
+	var msgs []mailstore.Message
+	seqSet, err := types.InterpretSequenceSet(seqSetStr)
+	if err != nil {
+		c.writeResponse(args.ID(), "NO "+err.Error())
+		return
+	}
 	if uid {
-		fmt.Printf("(searching by UID) ")
+		msgs = c.SelectedMailbox.MessageSetByUID(seqSet)
+	} else {
+		msgs = c.SelectedMailbox.MessageSetBySequenceNumber(seqSet)
 	}
 
-	if operation == "+" {
-		fmt.Printf("Add flags %s\n", flags)
-	} else if operation == "-" {
-		fmt.Printf("Remove flags %s\n", flags)
-	} else {
-		fmt.Printf("Set flags %s\n", flags)
+	flagField := types.FlagsFromString(flags)
+	for _, msg := range msgs {
+
+		if operation == "+" {
+			msg = msg.AddFlags(flagField)
+		} else if operation == "-" {
+			msg = msg.RemoveFlags(flagField)
+		} else {
+			msg = msg.OverwriteFlags(flagField)
+		}
+		msg.Save()
+
+		if err != nil {
+			c.writeResponse(args.ID(), "NO "+err.Error())
+			return
+		}
+
+		// Auto-fetch for the client
+		if !silent {
+			newFlags, err := fetch("FLAGS", c, msg)
+			if err != nil {
+				c.writeResponse(args.ID(), "NO "+err.Error())
+				return
+			}
+
+			fetchResponse := fmt.Sprintf("%d FETCH (%s)",
+				msg.SequenceNumber(),
+				newFlags,
+			)
+
+			c.writeResponse("", fetchResponse)
+		}
 	}
 
 	c.writeResponse(args.ID(), "OK STORE Completed")

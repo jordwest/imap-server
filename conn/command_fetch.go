@@ -4,12 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/jordwest/imap-server/mailstore"
 	"github.com/jordwest/imap-server/types"
 	"github.com/jordwest/imap-server/util"
+)
+
+const (
+	fetchArgUID    int = 0
+	fetchArgRange  int = 1
+	fetchArgParams int = 2
 )
 
 var registeredFetchParams []fetchParamDefinition
@@ -25,40 +30,47 @@ type fetchParamDefinition struct {
 }
 
 func cmdFetch(args commandArgs, c *Conn) {
-	start, _ := strconv.Atoi(args.Arg(1))
-
-	searchByUID := args.Arg(0) == "UID "
-
 	// Fetch the messages
-	var msg mailstore.Message
-	if searchByUID {
-		fmt.Printf("Searching by UID\n")
-		msg = c.SelectedMailbox.MessageByUID(uint32(start))
-	} else {
-		msg = c.SelectedMailbox.MessageBySequenceNumber(uint32(start))
+
+	seqSet, err := types.InterpretSequenceSet(args.Arg(fetchArgRange))
+	if err != nil {
+		c.writeResponse(args.ID(), "NO "+err.Error())
+		return
 	}
 
-	fetchParamString := args.Arg(3)
+	searchByUID := strings.ToUpper(args.Arg(fetchArgUID)) == "UID "
+
+	var msgs []mailstore.Message
+	if searchByUID {
+		msgs = c.SelectedMailbox.MessageSetByUID(seqSet)
+	} else {
+		msgs = c.SelectedMailbox.MessageSetBySequenceNumber(seqSet)
+	}
+
+	fetchParamString := args.Arg(fetchArgParams)
 	if searchByUID && !strings.Contains(fetchParamString, "UID") {
 		fetchParamString += " UID"
 	}
 
-	fetchParams, err := fetch(fetchParamString, c, msg)
-	if err != nil {
-		if err == ErrUnrecognisedParameter {
-			c.writeResponse(args.ID(), "BAD Unrecognised Parameter")
+	for _, msg := range msgs {
+		fetchParams, err := fetch(fetchParamString, c, msg)
+		if err != nil {
+			if err == ErrUnrecognisedParameter {
+				c.writeResponse(args.ID(), "BAD Unrecognised Parameter")
+				return
+			}
+
+			c.writeResponse(args.ID(), "BAD")
 			return
 		}
 
-		c.writeResponse(args.ID(), "BAD")
-		return
+		fullReply := fmt.Sprintf("%d FETCH (%s)",
+			msg.SequenceNumber(),
+			fetchParams)
+
+		c.writeResponse("", fullReply)
 	}
 
-	fullReply := fmt.Sprintf("%d FETCH (%s)",
-		msg.SequenceNumber(),
-		fetchParams)
-
-	c.writeResponse("", fullReply)
 	if searchByUID {
 		c.writeResponse(args.ID(), "OK UID FETCH Completed")
 	} else {

@@ -308,6 +308,7 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 		header:         hdr,
 	}
 	newMessage = newMessage.AddFlags(types.FlagRecent).(DummyMessage)
+	newMessage.mailbox = m
 	m.messages = append(m.messages, newMessage)
 }
 
@@ -317,6 +318,7 @@ type DummyMessage struct {
 	uid            uint32
 	header         types.MIMEHeader
 	flags          types.Flags
+	mailbox        *DummyMailbox
 }
 
 // Header returns the message's MIME Header
@@ -365,13 +367,18 @@ func (m DummyMessage) OverwriteFlags(newFlags types.Flags) Message {
 }
 
 func (m DummyMessage) AddFlags(newFlags types.Flags) Message {
-	m.flags.SetFlags(newFlags)
+	m.flags = m.flags.SetFlags(newFlags)
 	return m
 }
 
 func (m DummyMessage) RemoveFlags(newFlags types.Flags) Message {
-	m.flags.ResetFlags(newFlags)
+	m.flags = m.flags.ResetFlags(newFlags)
 	return m
+}
+
+func (m DummyMessage) Save() error {
+	m.mailbox.messages[m.sequenceNumber-1] = m
+	return nil
 }
 
 func debugPrintMessages(messages []Message) {
