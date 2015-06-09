@@ -1,23 +1,25 @@
-package imap
+package util
 
 import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/jordwest/imap-server/mailstore"
 )
 
 // RFC822 date format used by IMAP in go date format
-const rfc822Date = "Mon, 2 Jan 2006 15:04:05 +0700"
+const RFC822Date = "Mon, 2 Jan 2006 15:04:05 +0700"
 
 // Date format used in INTERNALDATE fetch parameter
-const internalDate = "02-Jan-2006 15:04:05 +0700"
+const InternalDate = "02-Jan-2006 15:04:05 +0700"
 
-func formatDate(date time.Time) string {
+func FormatDate(date time.Time) string {
 	fmt.Printf("date: %s\n", date)
 	return date.Format(rfc822Date)
 }
 
-func splitParams(params string) []string {
+func SplitParams(params string) []string {
 	paramsOpen := false
 	result := strings.FieldsFunc(params, func(r rune) bool {
 		if r == '[' {
@@ -34,7 +36,7 @@ func splitParams(params string) []string {
 	return result
 }
 
-func debugPrintMessages(messages []Message) {
+func DebugPrintMessages(messages []mailstore.Message) {
 	fmt.Printf("SeqNo  |UID    |From      |To        |Subject\n")
 	fmt.Printf("-------+-------+----------+----------+-------\n")
 	for _, msg := range messages {

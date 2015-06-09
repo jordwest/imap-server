@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jordwest/imap-server/types"
+	"github.com/jordwest/imap-server/util"
 )
 
 // DummyMailstore is an in-memory mail storage for testing purposes and to
@@ -96,7 +97,7 @@ type DummyMailbox struct {
 // DebugPrintMailbox prints out all messages in the mailbox to the command line
 // for debugging purposes
 func (m DummyMailbox) DebugPrintMailbox() {
-	debugPrintMessages(m.messages)
+	util.DebugPrintMessages(m.messages)
 }
 
 // Name returns the Mailbox's name
@@ -295,7 +296,7 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 	m.nextuid++
 
 	hdr := make(map[string]string)
-	hdr["Date"] = date.Format(rfc822Date)
+	hdr["Date"] = date.Format(util.RFC822Date)
 	hdr["To"] = to
 	hdr["From"] = from
 	hdr["Subject"] = subject

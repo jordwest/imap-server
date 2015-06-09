@@ -1,4 +1,4 @@
-package mailstore_test
+package mailstore
 
 import "testing"
 

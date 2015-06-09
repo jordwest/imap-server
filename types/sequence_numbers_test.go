@@ -1,4 +1,4 @@
-package types_test
+package types
 
 import (
 	"testing"
@@ -6,11 +6,11 @@ import (
 
 func testRange(t *testing.T, rangeStr string, expectedMin SequenceNumber, expectedMax SequenceNumber, expectedErr error) {
 	rng, err := interpretMessageRange(rangeStr)
-	if rng.min != expectedMin {
-		t.Errorf("Range '%s': min '%s' did not match expected '%s'", rangeStr, rng.min, expectedMin)
+	if rng.Min != expectedMin {
+		t.Errorf("Range '%s': Min '%s' did not match expected '%s'", rangeStr, rng.Min, expectedMin)
 	}
-	if rng.max != expectedMax {
-		t.Errorf("Range '%s': max '%s' did not match expected '%s'", rangeStr, rng.max, expectedMax)
+	if rng.Max != expectedMax {
+		t.Errorf("Range '%s': Max '%s' did not match expected '%s'", rangeStr, rng.Max, expectedMax)
 	}
 	assertErr(t, expectedErr, err)
 }
@@ -51,18 +51,18 @@ func TestFindMessageRange(t *testing.T) {
 
 func TestSequenceSet(t *testing.T) {
 	testSet(t, "118:*", []SequenceRange{
-		SequenceRange{min: "118", max: "*"},
+		SequenceRange{Min: "118", Max: "*"},
 	}, nil)
 	testSet(t, "1,3,4:14", []SequenceRange{
-		SequenceRange{min: "1", max: ""},
-		SequenceRange{min: "3", max: ""},
-		SequenceRange{min: "4", max: "14"},
+		SequenceRange{Min: "1", Max: ""},
+		SequenceRange{Min: "3", Max: ""},
+		SequenceRange{Min: "4", Max: "14"},
 	}, nil)
 	testSet(t, "1,3,8:14,18:*", []SequenceRange{
-		SequenceRange{min: "1", max: ""},
-		SequenceRange{min: "3", max: ""},
-		SequenceRange{min: "8", max: "14"},
-		SequenceRange{min: "18", max: "8"},
+		SequenceRange{Min: "1", Max: ""},
+		SequenceRange{Min: "3", Max: ""},
+		SequenceRange{Min: "8", Max: "14"},
+		SequenceRange{Min: "18", Max: "8"},
 	}, nil)
 	testSet(t, "1,3,:8:14,18:*", nil, errInvalidSequenceSetString("1,3,:8:14,18:*"))
 }
