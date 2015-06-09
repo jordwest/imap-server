@@ -32,6 +32,6 @@ func cmdAuthPlain(args commandArgs, c *Conn) {
 		c.writeResponse(args.ID(), "NO Incorrect username/password")
 		return
 	}
-	c.SetState(stateAuthenticated)
+	c.SetState(StateAuthenticated)
 	c.writeResponse(args.ID(), "OK Authenticated")
 }

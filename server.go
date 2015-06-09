@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/textproto"
 
+	"github.com/jordwest/imap-server/conn"
 	"github.com/jordwest/imap-server/mailstore"
 )
 
@@ -15,7 +16,6 @@ import (
 type Server struct {
 	Addr       string
 	listener   net.Listener
-	commands   []command
 	Transcript io.Writer
 	mailstore  mailstore.Mailstore
 }
@@ -25,7 +25,6 @@ type Server struct {
 func NewServer(store mailstore.Mailstore) *Server {
 	s := &Server{
 		Addr:       ":143",
-		commands:   make([]command, 0),
 		mailstore:  store,
 		Transcript: ioutil.Discard,
 	}
@@ -91,12 +90,9 @@ func (s *Server) Close() (err error) {
 	return err
 }
 
-func (s *Server) newConn(conn net.Conn) (c *Conn, err error) {
-	c = new(Conn)
-	c.srv = s
-	c.rwc = conn
-	c.setState(stateNew)
-	c.Transcript = s.Transcript
+func (s *Server) newConn(netConn net.Conn) (c *conn.Conn, err error) {
+	c = conn.NewConn(s.mailstore, netConn, s.Transcript)
+	c.SetState(conn.StateNew)
 	return c, nil
 }
 
@@ -105,7 +101,7 @@ func (s *Server) newConn(conn net.Conn) (c *Conn, err error) {
 // allowing test to inject state and wait for an expected response
 // The connection must be started manually with `go conn.Start()`
 // once desired state has been injected
-func NewTestConnection(transcript io.Writer) (s *Server, clientConn *textproto.Conn, serverConn *Conn, server *Server, err error) {
+func NewTestConnection(transcript io.Writer) (s *Server, clientConn *textproto.Conn, serverConn *conn.Conn, server *Server, err error) {
 	mStore := mailstore.NewDummyMailstore()
 	s = NewServer(mStore)
 	s.Addr = ":10143"

@@ -78,11 +78,11 @@ func (c *Conn) writeResponse(seq string, command string) {
 
 // Send the server greeting to the client
 func (c *Conn) sendWelcome() error {
-	if c.state != stateNew {
+	if c.state != StateNew {
 		return errors.New("Welcome already sent")
 	}
 	c.writeResponse("", "OK IMAP4rev1 Service Ready")
-	c.SetState(stateNotAuthenticated)
+	c.SetState(StateNotAuthenticated)
 	return nil
 }
 
@@ -112,9 +112,9 @@ func (c *Conn) Start() error {
 
 	}(c.recvReq)
 
-	for c.state != stateLoggedOut {
+	for c.state != StateLoggedOut {
 		// Always send welcome message if we are still in new connection state
-		if c.state == stateNew {
+		if c.state == StateNew {
 			c.sendWelcome()
 		}
 
@@ -123,7 +123,7 @@ func (c *Conn) Start() error {
 		case req, ok := <-c.recvReq: // receive line of data from client
 			if !ok {
 				// The client has closed the connection
-				c.state = stateLoggedOut
+				c.state = StateLoggedOut
 				break
 			}
 			fmt.Fprintf(c.Transcript, "C: %s\n", req)
