@@ -24,9 +24,6 @@ func cmdStoreFlags(args commandArgs, c *Conn) {
 	if args.Arg(storeArgSilent) == ".SILENT" {
 		silent = true
 	}
-	if silent {
-		fmt.Printf("Silently ")
-	}
 
 	var msgs []mailstore.Message
 	seqSet, err := types.InterpretSequenceSet(seqSetStr)
