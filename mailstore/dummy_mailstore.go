@@ -33,13 +33,15 @@ func NewDummyMailstore() DummyMailstore {
 		},
 	}
 	ms.User.mailboxes[0] = newDummyMailbox("INBOX")
-	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Test email", time.Now(),
+	// Mon Jan 2 15:04:05 -0700 MST 2006
+	mailTime, _ := time.Parse("02-Jan-2006 15:04:05 -0700", "28-Oct-2014 00:09:00 +0700")
+	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Test email", mailTime,
 		"Test email\r\n"+
 			"Regards,\r\n"+
 			"Me")
-	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Another test email", time.Now(),
+	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Another test email", mailTime,
 		"Another test email")
-	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Last email", time.Now(),
+	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Last email", mailTime,
 		"Hello")
 
 	ms.User.mailboxes[1] = newDummyMailbox("Trash")
