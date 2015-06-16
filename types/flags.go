@@ -43,7 +43,7 @@ func FlagsFromString(imapFlagString string) (f Flags) {
 }
 
 func (f Flags) ResetFlags(remove Flags) Flags {
-	f ^= remove
+	f &^= remove
 	return f
 }
 

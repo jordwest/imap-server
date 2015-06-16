@@ -12,6 +12,23 @@ func TestCombine(t *testing.T) {
 	}
 }
 
+func TestSetReset(t *testing.T) {
+	c1 := (FlagSeen | FlagDraft | FlagDeleted)
+	c1 = c1.ResetFlags(FlagDraft)
+
+	expected := (FlagSeen | FlagDeleted)
+	if c1 != expected {
+		t.Errorf("Expected %d, Actual %d", expected, c1)
+	}
+
+	// What if we try to remove a flag that already doesn't exist?
+	c1 = c1.ResetFlags(FlagDraft)
+	if c1 != expected {
+		t.Errorf("Expected %d, Actual %d", expected, c1)
+	}
+
+}
+
 func TestHasFlags(t *testing.T) {
 	c1 := (FlagSeen | FlagDraft | FlagDeleted)
 
