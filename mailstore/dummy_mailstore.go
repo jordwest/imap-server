@@ -12,7 +12,7 @@ import (
 // DummyMailstore is an in-memory mail storage for testing purposes and to
 // provide an example implementation of a mailstore
 type DummyMailstore struct {
-	user DummyUser
+	User DummyUser
 }
 
 func newDummyMailbox(name string) DummyMailbox {
@@ -27,22 +27,22 @@ func newDummyMailbox(name string) DummyMailbox {
 // used to create a new DummyMailstore
 func NewDummyMailstore() DummyMailstore {
 	ms := DummyMailstore{
-		user: DummyUser{
+		User: DummyUser{
 			authenticated: false,
 			mailboxes:     make([]DummyMailbox, 2),
 		},
 	}
-	ms.user.mailboxes[0] = newDummyMailbox("INBOX")
-	ms.user.mailboxes[0].addEmail("me@test.com", "you@test.com", "Test email", time.Now(),
+	ms.User.mailboxes[0] = newDummyMailbox("INBOX")
+	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Test email", time.Now(),
 		"Test email\r\n"+
 			"Regards,\r\n"+
 			"Me")
-	ms.user.mailboxes[0].addEmail("me@test.com", "you@test.com", "Another test email", time.Now(),
+	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Another test email", time.Now(),
 		"Another test email")
-	ms.user.mailboxes[0].addEmail("me@test.com", "you@test.com", "Last email", time.Now(),
+	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Last email", time.Now(),
 		"Hello")
 
-	ms.user.mailboxes[1] = newDummyMailbox("Trash")
+	ms.User.mailboxes[1] = newDummyMailbox("Trash")
 	return ms
 }
 
@@ -56,8 +56,8 @@ func (d DummyMailstore) Authenticate(username string, password string) (User, er
 		return DummyUser{}, errors.New("Invalid password. Use 'password'")
 	}
 
-	d.user.authenticated = true
-	return d.user, nil
+	d.User.authenticated = true
+	return d.User, nil
 }
 
 // DummyUser is an in-memory representation of a mailstore's user
