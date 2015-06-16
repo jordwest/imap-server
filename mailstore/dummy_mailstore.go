@@ -312,6 +312,8 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 		sequenceNumber: uint32(len(m.messages) + 1),
 		uid:            uid,
 		header:         hdr,
+		body:           body,
+		internalDate:   date,
 	}
 	newMessage = newMessage.AddFlags(types.FlagRecent).(DummyMessage)
 	newMessage.mailbox = m
@@ -323,8 +325,10 @@ type DummyMessage struct {
 	sequenceNumber uint32
 	uid            uint32
 	header         types.MIMEHeader
+	internalDate   time.Time
 	flags          types.Flags
 	mailbox        *DummyMailbox
+	body           string
 }
 
 // Header returns the message's MIME Header
@@ -346,14 +350,12 @@ func (m DummyMessage) Size() uint32 {
 
 // InternalDate returns the internally stored date of the message
 func (m DummyMessage) InternalDate() time.Time {
-	tz := time.FixedZone("Australia/Brisbane", 10*60*60)
-	return time.Date(2014, 10, 28, 0, 9, 0, 0, tz)
+	return m.internalDate
 }
 
 // Body returns the full body of the message
 func (m DummyMessage) Body() string {
-	return `This is the body of the email.
-It is a short email`
+	return m.body
 }
 
 // Keywords returns any keywords associated with the message
