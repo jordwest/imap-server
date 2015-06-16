@@ -150,7 +150,7 @@ func (m DummyMailbox) Unseen() uint32 {
 // MessageBySequenceNumber returns a single message given the message's sequence number
 func (m DummyMailbox) MessageBySequenceNumber(seqno uint32) Message {
 	if seqno > uint32(len(m.messages)) {
-		return DummyMessage{}
+		return nil
 	}
 	return m.messages[seqno-1]
 }
@@ -164,7 +164,7 @@ func (m DummyMailbox) MessageByUID(uidno uint32) Message {
 	}
 
 	// No message found
-	return DummyMessage{}
+	return nil
 }
 
 // MessageSetByUID returns a slice of messages given a set of UID ranges.
@@ -198,10 +198,13 @@ func (m DummyMailbox) MessageSetByUID(set types.SequenceSet) []Message {
 			var uid uint32
 			// Fetch specific message by sequence number
 			uid, err = msgRange.Min.Value()
-			msgs = append(msgs, m.MessageByUID(uid))
+			msg := m.MessageByUID(uid)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err.Error())
 				return msgs
+			}
+			if msg != nil {
+				msgs = append(msgs, msg)
 			}
 			continue
 		}
@@ -267,7 +270,10 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set types.SequenceSet) []Messag
 				fmt.Printf("Error: %s\n", err.Error())
 				return msgs
 			}
-			msgs = append(msgs, m.MessageBySequenceNumber(sequenceNo))
+			msg := m.MessageBySequenceNumber(sequenceNo)
+			if msg != nil {
+				msgs = append(msgs, msg)
+			}
 			continue
 		}
 
