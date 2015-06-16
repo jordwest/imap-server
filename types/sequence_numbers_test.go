@@ -5,7 +5,7 @@ import (
 )
 
 func testRange(t *testing.T, rangeStr string, expectedMin SequenceNumber, expectedMax SequenceNumber, expectedErr error) {
-	rng, err := interpretMessageRange(rangeStr)
+	rng, err := InterpretMessageRange(rangeStr)
 	if rng.Min != expectedMin {
 		t.Errorf("Range '%s': Min '%s' did not match expected '%s'", rangeStr, rng.Min, expectedMin)
 	}
@@ -26,7 +26,7 @@ func assertErr(t *testing.T, expectedErr error, actualErr error) {
 }
 
 func testSet(t *testing.T, setStr string, expectedSet []SequenceRange, expectedErr error) {
-	set, err := interpretSequenceSet(setStr)
+	set, err := InterpretSequenceSet(setStr)
 	assertErr(t, expectedErr, err)
 
 	if len(set) != len(expectedSet) {
