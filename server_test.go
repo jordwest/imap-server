@@ -246,7 +246,7 @@ func TestFetchRFC822Size(t *testing.T) {
 	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (RFC822.SIZE)")
-	r.expect(t, "* 1 FETCH (RFC822.SIZE 174)")
+	r.expect(t, "* 1 FETCH (RFC822.SIZE 148)")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
 
@@ -258,9 +258,10 @@ func TestFetchBodyOnly(t *testing.T) {
 	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[TEXT])")
-	r.expect(t, "* 1 FETCH (BODY[TEXT] {54}")
-	r.expect(t, "This is the body of the email.")
-	r.expect(t, "It is a short email")
+	r.expect(t, "* 1 FETCH (BODY[TEXT] {28}")
+	r.expect(t, "Test email")
+	r.expect(t, "Regards,")
+	r.expect(t, "Me")
 	r.expect(t, ")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
@@ -273,15 +274,16 @@ func TestFetchFullMessage(t *testing.T) {
 	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[])")
-	r.expect(t, "* 1 FETCH (BODY[] {180}")
+	r.expect(t, "* 1 FETCH (BODY[] {154}")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expect(t, "")
-	r.expect(t, "This is the body of the email.")
-	r.expect(t, "It is a short email")
+	r.expect(t, "Test email")
+	r.expect(t, "Regards,")
+	r.expect(t, "Me")
 	r.expect(t, ")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
@@ -294,15 +296,14 @@ func TestFetchFullMessageByUID(t *testing.T) {
 	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 UID FETCH 11 (BODY[])")
-	r.expect(t, "* 2 FETCH (BODY[] {188}")
+	r.expect(t, "* 2 FETCH (BODY[] {156}")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expect(t, "")
-	r.expect(t, "This is the body of the email.")
-	r.expect(t, "It is a short email")
+	r.expect(t, "Another test email")
 	r.expect(t, " UID 11)")
 	r.expect(t, "abcd.123 OK UID FETCH Completed")
 }
