@@ -155,7 +155,7 @@ func fetchInternalDate(args []string, c *Conn, m mailstore.Message, peekOnly boo
 }
 
 func fetchHeaders(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
-	hdr := fmt.Sprintf("\r\n%s\r\n\r\n", m.Header())
+	hdr := fmt.Sprintf("%s\r\n\r\n", m.Header())
 	hdrLen := len(hdr)
 
 	peekStr := ""
@@ -163,7 +163,7 @@ func fetchHeaders(args []string, c *Conn, m mailstore.Message, peekOnly bool) st
 		peekStr = ".PEEK"
 	}
 
-	return fmt.Sprintf("BODY%s[HEADER] {%d}%s", peekStr, hdrLen, hdr)
+	return fmt.Sprintf("BODY%s[HEADER] {%d}\r\n%s", peekStr, hdrLen, hdr)
 }
 
 func fetchHeaderSpecificFields(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
@@ -181,10 +181,10 @@ func fetchHeaderSpecificFields(args []string, c *Conn, m mailstore.Message, peek
 			requestedHeaders[k] = v
 		}
 	}
-	hdr := fmt.Sprintf("\r\n%s\r\n\r\n", requestedHeaders)
+	hdr := fmt.Sprintf("%s\r\n\r\n", requestedHeaders)
 	hdrLen := len(hdr)
 
-	return fmt.Sprintf("BODY[HEADER.FIELDS (%s)] {%d}%s",
+	return fmt.Sprintf("BODY[HEADER.FIELDS (%s)] {%d}\r\n%s",
 		strings.Join(replyFieldList, " "),
 		hdrLen,
 		hdr)
@@ -192,17 +192,17 @@ func fetchHeaderSpecificFields(args []string, c *Conn, m mailstore.Message, peek
 }
 
 func fetchBody(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
-	body := fmt.Sprintf("\r\n%s\r\n", m.Body())
+	body := fmt.Sprintf("%s\r\n", m.Body())
 	bodyLen := len(body)
 
-	return fmt.Sprintf("BODY[TEXT] {%d}%s",
+	return fmt.Sprintf("BODY[TEXT] {%d}\r\n%s",
 		bodyLen, body)
 }
 
 func fetchFullText(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
-	mail := fmt.Sprintf("\r\n%s\r\n\r\n%s\r\n", m.Header(), m.Body())
+	mail := fmt.Sprintf("%s\r\n\r\n%s\r\n", m.Header(), m.Body())
 	mailLen := len(mail)
 
-	return fmt.Sprintf("BODY[] {%d}%s",
+	return fmt.Sprintf("BODY[] {%d}\r\n%s",
 		mailLen, mail)
 }
