@@ -154,9 +154,9 @@ func TestStore(t *testing.T) {
 	r.expect(t, "abcd.124 OK STORE Completed")
 
 	r.cConn.PrintfLine("abcd.125 uid STORE 3:* FLAGS (\\Deleted \\Seen)")
-	r.expect(t, "* 1 FETCH (FLAGS (\\Deleted \\Seen))")
-	r.expect(t, "* 2 FETCH (FLAGS (\\Deleted \\Seen))")
-	r.expect(t, "* 3 FETCH (FLAGS (\\Deleted \\Seen))")
+	r.expect(t, "* 1 FETCH (FLAGS (\\Seen \\Deleted))")
+	r.expect(t, "* 2 FETCH (FLAGS (\\Seen \\Deleted))")
+	r.expect(t, "* 3 FETCH (FLAGS (\\Seen \\Deleted))")
 	r.expect(t, "abcd.125 OK STORE Completed")
 }
 
