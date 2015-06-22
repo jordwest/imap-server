@@ -1,8 +1,6 @@
 package types
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestCombine(t *testing.T) {
 	c1 := CombineFlags(FlagSeen, FlagDraft|FlagDeleted)
@@ -44,4 +42,14 @@ func TestHasFlags(t *testing.T) {
 		t.Errorf("HasFlags should return false")
 	}
 
+}
+
+func TestFlagsFromString(t *testing.T) {
+	c1 := FlagsFromString("\\Deleted \\Seen")
+
+	expected := Flags(FlagDeleted | FlagSeen)
+
+	if c1 != expected {
+		t.Errorf("Expected %d, Actual %d", expected, c1)
+	}
 }
