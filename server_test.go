@@ -139,27 +139,6 @@ func TestStatus(t *testing.T) {
 	r.expect(t, "abcd.123 OK STATUS Completed")
 }
 
-func TestStore(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 STORE 1 +FLAGS.SILENT (\\Seen)")
-	r.expect(t, "abcd.123 OK STORE Completed")
-
-	r.cConn.PrintfLine("abcd.124 UID STORE 12 -FLAGS (\\Seen)")
-	r.expect(t, "* 3 FETCH (FLAGS (\\Recent))")
-	r.expect(t, "abcd.124 OK STORE Completed")
-
-	r.cConn.PrintfLine("abcd.125 uid STORE 3:* FLAGS (\\Deleted \\Seen)")
-	r.expect(t, "* 1 FETCH (FLAGS (\\Seen \\Deleted))")
-	r.expect(t, "* 2 FETCH (FLAGS (\\Seen \\Deleted))")
-	r.expect(t, "* 3 FETCH (FLAGS (\\Seen \\Deleted))")
-	r.expect(t, "abcd.125 OK STORE Completed")
-}
-
 func TestFetchFlagsUID(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
