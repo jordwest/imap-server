@@ -85,6 +85,37 @@ func (c *Conn) sendWelcome() error {
 	return nil
 }
 
+func (c *Conn) assertAuthenticated(seq string) bool {
+	if c.state != StateAuthenticated && c.state != StateSelected {
+		c.writeResponse(seq, "BAD not authenticated")
+		return false
+	}
+
+	if c.User == nil {
+		panic("In authenticated state but no user is set")
+	}
+
+	return true
+}
+
+func (c *Conn) assertSelected(seq string) bool {
+	// Ensure we are authenticated first
+	if !c.assertAuthenticated(seq) {
+		return false
+	}
+
+	if c.state != StateSelected {
+		c.writeResponse(seq, "BAD not selected")
+		return false
+	}
+
+	if c.SelectedMailbox == nil {
+		panic("In selected state but no selected mailbox is set")
+	}
+
+	return true
+}
+
 // Close forces the server to close the client's connection
 func (c *Conn) Close() error {
 	fmt.Fprintf(c.Transcript, "Server closing connection\n")

@@ -15,6 +15,10 @@ const storeArgSilent int = 3
 const storeArgFlags int = 4
 
 func cmdStoreFlags(args commandArgs, c *Conn) {
+	if !c.assertSelected(args.ID()) {
+		return
+	}
+
 	operation := args.Arg(storeArgOperation)
 	flags := args.Arg(storeArgFlags)
 	uid := strings.ToUpper(args.Arg(storeArgUID)) == "UID "
