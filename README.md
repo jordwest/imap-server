@@ -27,26 +27,26 @@ emails exists. Actually don't use it anywhere.
 
 Supported Commands
 ------------------
-Command       | Planned | Implemented | Tests
-------------- | ------- | ----------- | -----
+Command       | Planned  | Implemented  | Tests
+------------- | -------  | -----------  | -----
 CAPABILITY    | ✓       | ✓           | ✗
 NOOP          | ✓       | ✓           | ✗
-LOGOUT        | ✓       | ✗           | ✗
-AUTHENTICATE  | ✗       | -           | -
-LOGIN         | ✓       | ✗           | ✗
+LOGOUT        | ✓       | ✓           | ✗
+AUTHENTICATE  | ✗       | -            | -
+LOGIN         | ✓       | ✓           | ✗
 STARTTLS      | ✓       | ✗           | ✗
-EXAMINE       | ✓       | ✗           | ✗
-CREATE        | ✗       | -           | -
-DELETE        | ✗       | -           | -
-RENAME        | ✗       | -           | -
-SUBSCRIBE     | ✗       | -           | -
-UNSUBSCRIBE   | ✗       | -           | -
+EXAMINE       | ✓       | ✓           | ✗
+CREATE        | ✗       | -            | -
+DELETE        | ✗       | -            | -
+RENAME        | ✗       | -            | -
+SUBSCRIBE     | ✗       | -            | -
+UNSUBSCRIBE   | ✗       | -            | -
 LIST          | ✓       | ✓           | ✓
 LSUB          | ✓       | ✓           | ✓
 STATUS        | ✓       | ✓           | ✓
 APPEND        | ✓       | ✗           | ✗
-CHECK         | ?       | ✗           | ✗
-CLOSE         | ✓       | ✗           | ✗
+CHECK         | ?        | ✗           | ✗
+CLOSE         | ✓       | ✓           | ✗
 EXPUNGE       | ✓       | ✗           | ✗
 SEARCH        | ✓       | ✗           | ✗
 FETCH         | ✓       | ✓           | ✓
