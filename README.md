@@ -14,7 +14,7 @@ messing around with maildir.
 
 Although it would be possible to implement and plug in a maildir storage
 interface, that would defeat the purpose of this project and there are much
-better, tried and tested open source and commercial solutions that have been 
+better, tried and tested open source and commercial solutions that have been
 around for a long time (Courier, Dovecot etc).
 The goal of this project is to provide simple IMAP access to some kind of existing
 system without the overhead of installing a full-blown IMAP/POP3 mail server.
