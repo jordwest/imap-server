@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"strings"
 
 	"github.com/jordwest/imap-server/mailstore"
@@ -26,7 +25,7 @@ const lineEnding string = "\r\n"
 // Conn represents a client connection to the IMAP server
 type Conn struct {
 	state           connState
-	Rwc             net.Conn
+	Rwc             io.ReadWriteCloser
 	Transcript      io.Writer
 	recvReq         chan string
 	Mailstore       mailstore.Mailstore // Pointer to the IMAP server's mailstore to which this connection belongs
@@ -34,7 +33,7 @@ type Conn struct {
 	SelectedMailbox mailstore.Mailbox
 }
 
-func NewConn(mailstore mailstore.Mailstore, netConn net.Conn, transcript io.Writer) (c *Conn) {
+func NewConn(mailstore mailstore.Mailstore, netConn io.ReadWriteCloser, transcript io.Writer) (c *Conn) {
 	c = new(Conn)
 	c.Mailstore = mailstore
 	c.Rwc = netConn
