@@ -26,7 +26,8 @@ var _ = Describe("LOGOUT Command", func() {
 
 		It("should give an error", func() {
 			SendLine("abcd.123 LOGOUT")
-			ExpectResponse("abcd.123 NO not logged in")
+			ExpectResponse("* BYE IMAP4rev1 server logging out")
+			ExpectResponse("abcd.123 OK LOGOUT completed")
 		})
 	})
 })
