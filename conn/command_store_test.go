@@ -6,7 +6,7 @@ import (
 )
 
 var _ = Describe("STORE Command", func() {
-	Context("When logged in", func() {
+	Context("When a mailbox is selected", func() {
 		BeforeEach(func() {
 			tConn.SetState(conn.StateSelected)
 			tConn.User = mStore.User
@@ -30,6 +30,18 @@ var _ = Describe("STORE Command", func() {
 			ExpectResponse("* 2 FETCH (FLAGS (\\Seen \\Deleted))")
 			ExpectResponse("* 3 FETCH (FLAGS (\\Seen \\Deleted))")
 			ExpectResponse("abcd.125 OK STORE Completed")
+		})
+	})
+
+	Context("When logged in but no mailbox is selected", func() {
+		BeforeEach(func() {
+			tConn.SetState(conn.StateAuthenticated)
+			tConn.User = mStore.User
+		})
+
+		It("should return an error", func() {
+			SendLine("abcd.123 STORE 1 FLAGS (\\Seen)")
+			ExpectResponse("abcd.123 BAD not selected")
 		})
 	})
 
