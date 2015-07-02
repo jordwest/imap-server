@@ -2,7 +2,9 @@ package conn_test
 
 import (
 	"github.com/jordwest/imap-server/conn"
+	"github.com/jordwest/imap-server/types"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("STORE Command", func() {
@@ -16,6 +18,8 @@ var _ = Describe("STORE Command", func() {
 		It("should silently add a flag to a message", func() {
 			SendLine("abcd.123 STORE 1 +FLAGS.SILENT (\\Seen)")
 			ExpectResponse("abcd.123 OK STORE Completed")
+			Expect(tConn.SelectedMailbox.MessageBySequenceNumber(1).Flags()).
+				To(Equal(types.FlagSeen | types.FlagRecent))
 		})
 
 		It("should remove a flag from a message by UID", func() {
