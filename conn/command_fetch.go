@@ -64,6 +64,14 @@ func cmdFetch(args commandArgs, c *Conn) {
 			return
 		}
 
+		if c.mailboxWritable == ReadWrite {
+			msg = msg.RemoveFlags(types.FlagRecent)
+			err = msg.Save()
+			if err != nil {
+				// TODO: this error is not fatal, but should still be logged
+			}
+		}
+
 		fullReply := fmt.Sprintf("%d FETCH (%s)",
 			msg.SequenceNumber(),
 			fetchParams)
