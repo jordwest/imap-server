@@ -9,7 +9,7 @@ import (
 // Handles PLAIN text AUTHENTICATE command
 func cmdAuthPlain(args commandArgs, c *Conn) {
 	// Compile login regex
-	loginRE := regexp.MustCompile("(?:[A-z0-9]+)\x00([A-z0-9]+)\x00([A-z0-9]+)")
+	loginRE := regexp.MustCompile("(?:[A-z0-9]+)?\x00([A-z0-9]+)\x00([A-z0-9]+)")
 
 	// Tell client to go ahead
 	c.writeResponse("+", "")
