@@ -9,6 +9,7 @@ func cmdSelect(args commandArgs, c *Conn) {
 		fmt.Fprintf(c, "%s NO %s\r\n", args.ID(), err)
 		return
 	}
+	c.SetState(StateSelected)
 
 	writeMailboxInfo(c, c.SelectedMailbox)
 	c.writeResponse(args.ID(), "OK [READ-WRITE] SELECT completed")
