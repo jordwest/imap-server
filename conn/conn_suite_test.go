@@ -2,8 +2,10 @@ package conn_test
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"net/textproto"
+	"strings"
 
 	"github.com/jordwest/imap-server/conn"
 	"github.com/jordwest/imap-server/mailstore"
@@ -28,8 +30,18 @@ func SendLine(request string) {
 	fmt.Fprintf(mockConn.Client, "%s\n", request)
 }
 
-func ExpectResponse(response string) {
-	Expect(reader.ReadLine()).To(Equal(response))
+func SendBase64(request string) {
+	encoder := base64.NewEncoder(base64.StdEncoding, mockConn.Client)
+	fmt.Fprintf(encoder, "%s", request)
+	// Must close the encoder when finished to flush any partial blocks.
+	encoder.Close()
+}
+
+func ExpectResponse(expected string) {
+	response, err := reader.ReadLine()
+	expected = strings.TrimSpace(expected)
+	response = strings.TrimSpace(response)
+	Expect(response, err).To(Equal(expected))
 }
 
 // === SETUP ====

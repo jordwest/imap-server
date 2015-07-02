@@ -1,0 +1,42 @@
+package conn_test
+
+import . "github.com/onsi/ginkgo"
+
+var _ = Describe("Thunderbird mail client", func() {
+	Context("Full conversation", func() {
+		It("should mark a message as seen and then flagged", func() {
+			ExpectResponse("* OK IMAP4rev1 Service Ready")
+			SendLine("1 capability")
+			ExpectResponse("* CAPABILITY IMAP4rev1 AUTH=PLAIN")
+			ExpectResponse("1 OK CAPABILITY completed")
+			SendLine("2 authenticate plain")
+			ExpectResponse("+")
+			SendBase64("\x00username\x00password")
+			SendLine("")
+			ExpectResponse("2 OK Authenticated")
+			SendLine("3 select \"INBOX\"")
+			ExpectResponse("* 3 EXISTS")
+			ExpectResponse("* 3 RECENT")
+			ExpectResponse("* OK [UNSEEN 3]")
+			ExpectResponse("* OK [UIDNEXT 13]")
+			ExpectResponse("* OK [UIDVALIDITY 250]")
+			ExpectResponse("* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)")
+			ExpectResponse("3 OK [READ-WRITE] SELECT completed")
+			SendLine("4 UID fetch 1:* (FLAGS)")
+			ExpectResponse("* 1 FETCH (FLAGS (\\Recent) UID 10)")
+			ExpectResponse("* 2 FETCH (FLAGS (\\Recent) UID 11)")
+			ExpectResponse("* 3 FETCH (FLAGS (\\Recent) UID 12)")
+			ExpectResponse("4 OK UID FETCH Completed")
+			SendLine("5 noop")
+			ExpectResponse("5 OK NOOP Completed")
+			SendLine("6 UID fetch 13:* (FLAGS)")
+			ExpectResponse("6 OK UID FETCH Completed")
+			SendLine("7 uid store 12 +Flags (\\Seen)")
+			ExpectResponse("* 3 FETCH (FLAGS (\\Seen))")
+			ExpectResponse("7 OK STORE Completed")
+			SendLine("8 uid store 12 +Flags (\\Flagged)")
+			ExpectResponse("* 3 FETCH (FLAGS (\\Seen \\Flagged))")
+			ExpectResponse("8 OK STORE Completed")
+		})
+	})
+})
