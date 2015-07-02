@@ -3,8 +3,8 @@ package conn_test
 import . "github.com/onsi/ginkgo"
 
 var _ = Describe("Thunderbird mail client", func() {
-	Context("Full conversation", func() {
-		It("should mark a message as seen and then flagged", func() {
+	Context("v31.7.0/OSX", func() {
+		It("should download messages, mark a message as seen and then flagged", func() {
 			ExpectResponse("* OK IMAP4rev1 Service Ready")
 			SendLine("1 capability")
 			ExpectResponse("* CAPABILITY IMAP4rev1 AUTH=PLAIN")
