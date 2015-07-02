@@ -20,6 +20,13 @@ const (
 	StateLoggedOut
 )
 
+type WriteMode bool
+
+const (
+	ReadOnly  WriteMode = false
+	ReadWrite           = true
+)
+
 const lineEnding string = "\r\n"
 
 // Conn represents a client connection to the IMAP server
@@ -31,6 +38,7 @@ type Conn struct {
 	Mailstore       mailstore.Mailstore // Pointer to the IMAP server's mailstore to which this connection belongs
 	User            mailstore.User
 	SelectedMailbox mailstore.Mailbox
+	mailboxWritable WriteMode // True if write access is allowed to the currently selected mailbox
 }
 
 func NewConn(mailstore mailstore.Mailstore, netConn io.ReadWriteCloser, transcript io.Writer) (c *Conn) {
@@ -43,7 +51,13 @@ func NewConn(mailstore mailstore.Mailstore, netConn io.ReadWriteCloser, transcri
 
 func (c *Conn) SetState(state connState) {
 	c.state = state
+
+	// As a precaution, reset any mailbox write access when changing states
+	c.SetReadOnly()
 }
+
+func (c *Conn) SetReadOnly()  { c.mailboxWritable = ReadOnly }
+func (c *Conn) SetReadWrite() { c.mailboxWritable = ReadWrite }
 
 func (c *Conn) handleRequest(req string) {
 	for _, cmd := range commands {
@@ -98,7 +112,7 @@ func (c *Conn) assertAuthenticated(seq string) bool {
 	return true
 }
 
-func (c *Conn) assertSelected(seq string) bool {
+func (c *Conn) assertSelected(seq string, writable WriteMode) bool {
 	// Ensure we are authenticated first
 	if !c.assertAuthenticated(seq) {
 		return false
@@ -111,6 +125,11 @@ func (c *Conn) assertSelected(seq string) bool {
 
 	if c.SelectedMailbox == nil {
 		panic("In selected state but no selected mailbox is set")
+	}
+
+	if writable == ReadWrite && c.mailboxWritable != ReadWrite {
+		c.writeResponse(seq, "NO Selected mailbox is READONLY")
+		return false
 	}
 
 	return true

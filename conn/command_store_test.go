@@ -11,6 +11,7 @@ var _ = Describe("STORE Command", func() {
 	Context("When a mailbox is selected", func() {
 		BeforeEach(func() {
 			tConn.SetState(conn.StateSelected)
+			tConn.SetReadWrite()
 			tConn.User = mStore.User
 			tConn.SelectedMailbox = tConn.User.Mailboxes()[0]
 		})
