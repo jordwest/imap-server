@@ -32,7 +32,10 @@ func NewDummyMailstore() DummyMailstore {
 			mailboxes:     make([]DummyMailbox, 2),
 		},
 	}
+	ms.User.mailstore = &ms
 	ms.User.mailboxes[0] = newDummyMailbox("INBOX")
+	ms.User.mailboxes[0].ID = 0
+	ms.User.mailboxes[0].mailstore = &ms
 	// Mon Jan 2 15:04:05 -0700 MST 2006
 	mailTime, _ := time.Parse("02-Jan-2006 15:04:05 -0700", "28-Oct-2014 00:09:00 +0700")
 	ms.User.mailboxes[0].addEmail("me@test.com", "you@test.com", "Test email", mailTime,
@@ -45,6 +48,8 @@ func NewDummyMailstore() DummyMailstore {
 		"Hello")
 
 	ms.User.mailboxes[1] = newDummyMailbox("Trash")
+	ms.User.mailboxes[1].ID = 1
+	ms.User.mailboxes[1].mailstore = &ms
 	return ms
 }
 
@@ -66,6 +71,7 @@ func (d DummyMailstore) Authenticate(username string, password string) (User, er
 type DummyUser struct {
 	authenticated bool
 	mailboxes     []DummyMailbox
+	mailstore     *DummyMailstore
 }
 
 // Mailboxes implements the Mailboxes method on the User interface
@@ -91,9 +97,11 @@ func (u DummyUser) MailboxByName(name string) (Mailbox, error) {
 
 // DummyMailbox is an in-memory implementation of a Mailstore Mailbox
 type DummyMailbox struct {
-	name     string
-	nextuid  uint32
-	messages []Message
+	ID        uint32
+	name      string
+	nextuid   uint32
+	messages  []Message
+	mailstore *DummyMailstore
 }
 
 // DebugPrintMailbox prints out all messages in the mailbox to the command line
@@ -318,7 +326,8 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 		internalDate:   date,
 	}
 	newMessage = newMessage.AddFlags(types.FlagRecent).(DummyMessage)
-	newMessage.mailbox = m
+	newMessage.mailboxID = m.ID
+	newMessage.mailstore = m.mailstore
 	m.messages = append(m.messages, newMessage)
 }
 
@@ -329,7 +338,8 @@ type DummyMessage struct {
 	header         types.MIMEHeader
 	internalDate   time.Time
 	flags          types.Flags
-	mailbox        *DummyMailbox
+	mailboxID      uint32
+	mailstore      *DummyMailstore
 	body           string
 }
 
@@ -387,7 +397,7 @@ func (m DummyMessage) RemoveFlags(newFlags types.Flags) Message {
 }
 
 func (m DummyMessage) Save() error {
-	m.mailbox.messages[m.sequenceNumber-1] = m
+	m.mailstore.User.Mailboxes()[m.mailboxID].(DummyMailbox).messages[m.sequenceNumber-1] = m
 	return nil
 }
 
