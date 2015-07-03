@@ -51,6 +51,9 @@ func cmdAppend(args commandArgs, c *Conn) {
 	body := false
 	for receivedLength < length {
 		line := <-c.recvReq
+		lineLength := uint64(len(line + "\r\n"))
+		receivedLength += lineLength
+
 		// Blank line indicates end of headers, beginning of body
 		if line == "" && body == false {
 			body = true
@@ -62,6 +65,7 @@ func cmdAppend(args commandArgs, c *Conn) {
 		} else {
 			fmt.Printf("Received body: %s\n", line)
 		}
+
 	}
 
 	c.writeResponse(args.ID(), "OK APPEND completed")
