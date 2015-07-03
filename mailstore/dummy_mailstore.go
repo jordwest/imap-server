@@ -307,6 +307,19 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set types.SequenceSet) []Messag
 
 }
 
+func (m DummyMailbox) NewMessage() Message {
+	return DummyMessage{
+		sequenceNumber: 0,
+		uid:            0,
+		header:         make(types.MIMEHeader),
+		internalDate:   time.Now(),
+		flags:          types.Flags(0),
+		mailstore:      m.mailstore,
+		mailboxID:      m.ID,
+		body:           "",
+	}
+}
+
 func (m *DummyMailbox) addEmail(from string, to string, subject string, date time.Time, body string) {
 	uid := m.nextuid
 	m.nextuid++

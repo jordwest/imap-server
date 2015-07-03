@@ -54,6 +54,11 @@ type Mailbox interface {
 
 	// Get messages that belong to a set of ranges of sequence numbers
 	MessageSetBySequenceNumber(set types.SequenceSet) []Message
+
+	// Creates a new (empty) message that belongs to this mailbox
+	// NOTE: This should not make any changes to the mailbox until the
+	// message's `Save` method is called.
+	NewMessage() Message
 }
 
 // Message represents a standard email message

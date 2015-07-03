@@ -62,6 +62,12 @@ func init() {
 	registerCommand("(?i:EXAMINE) \"?([A-z0-9]+)\"?", cmdExamine)
 	registerCommand("(?i:STATUS) \"?([A-z0-9/]+)\"? \\(([A-z\\s]+)\\)", cmdStatus)
 	registerCommand("((?i)UID )?(?i:FETCH) ("+sequenceSet+") \\(([A-z0-9\\s\\(\\)\\[\\]\\.-]+)\\)", cmdFetch)
+
+	// APPEND "INBOX" (\Seen) {310}
+	// APPEND "INBOX" (\Seen) "21-Jun-2015 01:00:25 +0900" {310}
+	// APPEND "INBOX" {310}
+	registerCommand("(?i:APPEND) \"?([A-z0-9/]+)\"?(?: \\(([\\\\A-z\\s]+)\\))?(?: \"([A-z\\d \\:\\+]+)\")? {(\\d+)}", cmdAppend)
+
 	// STORE 2:4 +FLAGS (\Deleted)       Mark messages as deleted
 	// STORE 2:4 -FLAGS (\Seen)          Mark messages as unseen
 	// STORE 2:4 FLAGS (\Seen \Deleted)  Replace flags
