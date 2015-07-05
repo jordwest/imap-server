@@ -33,8 +33,8 @@ const lineEnding string = "\r\n"
 type Conn struct {
 	state           connState
 	Rwc             io.ReadWriteCloser
+	RwcScanner      *bufio.Scanner // Provides an interface for scanning lines from the connection
 	Transcript      io.Writer
-	recvReq         chan string
 	Mailstore       mailstore.Mailstore // Pointer to the IMAP server's mailstore to which this connection belongs
 	User            mailstore.User
 	SelectedMailbox mailstore.Mailbox
@@ -141,6 +141,12 @@ func (c *Conn) Close() error {
 	return c.Rwc.Close()
 }
 
+// ReadLine awaits a single line from the client
+func (c *Conn) ReadLine() (text string, ok bool) {
+	ok = c.RwcScanner.Scan()
+	return c.RwcScanner.Text(), ok
+}
+
 // Start tells the server to start communicating with the client (after
 // the connection has been opened)
 func (c *Conn) Start() error {
@@ -148,18 +154,7 @@ func (c *Conn) Start() error {
 		return errors.New("No connection exists")
 	}
 
-	c.recvReq = make(chan string)
-
-	go func(ch chan string) {
-		scanner := bufio.NewScanner(c.Rwc)
-		for ok := scanner.Scan(); ok == true; ok = scanner.Scan() {
-			text := scanner.Text()
-			ch <- text
-		}
-		fmt.Fprintf(c.Transcript, "Client ended connection\n")
-		close(ch)
-
-	}(c.recvReq)
+	c.RwcScanner = bufio.NewScanner(c.Rwc)
 
 	for c.state != StateLoggedOut {
 		// Always send welcome message if we are still in new connection state
@@ -168,15 +163,17 @@ func (c *Conn) Start() error {
 		}
 
 		// Await requests from the client
-		select {
-		case req, ok := <-c.recvReq: // receive line of data from client
-			if !ok {
-				// The client has closed the connection
-				c.state = StateLoggedOut
-				break
-			}
-			fmt.Fprintf(c.Transcript, "C: %s\n", req)
-			c.handleRequest(req)
+		req, ok := c.ReadLine()
+		if !ok {
+			// The client has closed the connection
+			c.state = StateLoggedOut
+			break
+		}
+		fmt.Fprintf(c.Transcript, "C: %s\n", req)
+		c.handleRequest(req)
+
+		if c.RwcScanner.Err() != nil {
+			fmt.Fprintf(c.Transcript, "Scan error: %s\n", c.RwcScanner.Err())
 		}
 	}
 

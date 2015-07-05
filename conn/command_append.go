@@ -50,7 +50,10 @@ func cmdAppend(args commandArgs, c *Conn) {
 	// First receive headers
 	body := false
 	for receivedLength < length {
-		line := <-c.recvReq
+		line, ok := c.ReadLine()
+		if !ok {
+			return
+		}
 		lineLength := uint64(len(line + "\r\n"))
 		receivedLength += lineLength
 

@@ -15,7 +15,12 @@ func cmdAuthPlain(args commandArgs, c *Conn) {
 	c.writeResponse("+", "")
 
 	// Wait for client to send auth details
-	authDetails := <-c.recvReq
+	ok := c.RwcScanner.Scan()
+	if !ok {
+		return
+	}
+	authDetails := c.RwcScanner.Text()
+
 	data, err := base64.StdEncoding.DecodeString(authDetails)
 	if err != nil {
 		c.writeResponse("", "BAD Invalid auth details")
