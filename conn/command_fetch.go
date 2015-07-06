@@ -30,6 +30,21 @@ type fetchParamDefinition struct {
 	handler func([]string, *Conn, mailstore.Message, bool) string
 }
 
+// Register all supported fetch parameters
+func init() {
+	peekRE = regexp.MustCompile("\\.PEEK")
+	registeredFetchParams = make([]fetchParamDefinition, 0)
+	registerFetchParam("UID", fetchUID)
+	registerFetchParam("FLAGS", fetchFlags)
+	registerFetchParam("RFC822\\.SIZE", fetchRfcSize)
+	registerFetchParam("INTERNALDATE", fetchInternalDate)
+	registerFetchParam("BODY(?:\\.PEEK)?\\[HEADER\\]", fetchHeaders)
+	registerFetchParam("BODY(?:\\.PEEK)?"+
+		"\\[HEADER\\.FIELDS \\(([A-z\\s-]+)\\)\\]", fetchHeaderSpecificFields)
+	registerFetchParam("BODY(?:\\.PEEK)?\\[TEXT\\]", fetchBody)
+	registerFetchParam("BODY(?:\\.PEEK)?\\[\\]", fetchFullText)
+}
+
 func cmdFetch(args commandArgs, c *Conn) {
 	if !c.assertSelected(args.ID(), ReadOnly) {
 		return
@@ -121,21 +136,6 @@ func fetchParam(param string, c *Conn, m mailstore.Message) (string, error) {
 		}
 	}
 	return "", ErrUnrecognisedParameter
-}
-
-// Register all supported fetch parameters
-func init() {
-	peekRE = regexp.MustCompile("\\.PEEK")
-	registeredFetchParams = make([]fetchParamDefinition, 0)
-	registerFetchParam("UID", fetchUID)
-	registerFetchParam("FLAGS", fetchFlags)
-	registerFetchParam("RFC822\\.SIZE", fetchRfcSize)
-	registerFetchParam("INTERNALDATE", fetchInternalDate)
-	registerFetchParam("BODY(?:\\.PEEK)?\\[HEADER\\]", fetchHeaders)
-	registerFetchParam("BODY(?:\\.PEEK)?"+
-		"\\[HEADER\\.FIELDS \\(([A-z\\s-]+)\\)\\]", fetchHeaderSpecificFields)
-	registerFetchParam("BODY(?:\\.PEEK)?\\[TEXT\\]", fetchBody)
-	registerFetchParam("BODY(?:\\.PEEK)?\\[\\]", fetchFullText)
 }
 
 func registerFetchParam(regex string, handler func([]string, *Conn, mailstore.Message, bool) string) {
