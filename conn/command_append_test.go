@@ -3,7 +3,7 @@ package conn_test
 import (
 	"github.com/jordwest/imap-server/conn"
 	. "github.com/onsi/ginkgo"
-	//. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("APPEND Command", func() {
@@ -24,6 +24,12 @@ var _ = Describe("APPEND Command", func() {
 			SendLine("From me")
 			SendLine("")
 			ExpectResponse("abcd.123 OK APPEND completed")
+
+			// Ensure that the email was indeed appended
+			msg := tConn.User.Mailboxes()[0].MessageByUID(13)
+			Expect(msg.Header().Get("From")).To(Equal("me@testing.com"))
+			Expect(msg.Header().Get("To")).To(Equal("you@testing.com"))
+			Expect(msg.Header().Get("Subject")).To(Equal("This is a newly appended email"))
 		})
 	})
 })
