@@ -3,6 +3,7 @@ package mailstore
 import (
 	"errors"
 	"fmt"
+	"net/textproto"
 	"time"
 
 	"github.com/jordwest/imap-server/types"
@@ -311,7 +312,7 @@ func (m DummyMailbox) NewMessage() Message {
 	return DummyMessage{
 		sequenceNumber: 0,
 		uid:            0,
-		header:         make(types.MIMEHeader),
+		header:         make(textproto.MIMEHeader),
 		internalDate:   time.Now(),
 		flags:          types.Flags(0),
 		mailstore:      m.mailstore,
@@ -324,12 +325,12 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 	uid := m.nextuid
 	m.nextuid++
 
-	hdr := make(map[string]string)
-	hdr["Date"] = date.Format(util.RFC822Date)
-	hdr["To"] = to
-	hdr["From"] = from
-	hdr["Subject"] = subject
-	hdr["Message-ID"] = fmt.Sprintf("<%d@test.com>", uid)
+	hdr := make(textproto.MIMEHeader)
+	hdr.Set("Date", date.Format(util.RFC822Date))
+	hdr.Set("To", to)
+	hdr.Set("From", from)
+	hdr.Set("Subject", subject)
+	hdr.Set("Message-ID", fmt.Sprintf("<%d@test.com>", uid))
 
 	newMessage := DummyMessage{
 		sequenceNumber: uint32(len(m.messages) + 1),
@@ -348,7 +349,7 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 type DummyMessage struct {
 	sequenceNumber uint32
 	uid            uint32
-	header         types.MIMEHeader
+	header         textproto.MIMEHeader
 	internalDate   time.Time
 	flags          types.Flags
 	mailboxID      uint32
@@ -357,7 +358,7 @@ type DummyMessage struct {
 }
 
 // Header returns the message's MIME Header
-func (m DummyMessage) Header() (hdr types.MIMEHeader) {
+func (m DummyMessage) Header() (hdr textproto.MIMEHeader) {
 	return m.header
 }
 
@@ -418,9 +419,9 @@ func debugPrintMessages(messages []Message) {
 	fmt.Printf("SeqNo  |UID    |From      |To        |Subject\n")
 	fmt.Printf("-------+-------+----------+----------+-------\n")
 	for _, msg := range messages {
-		_, from, _ := msg.Header().FindKey("from")
-		_, to, _ := msg.Header().FindKey("to")
-		_, subject, _ := msg.Header().FindKey("subject")
+		from := msg.Header().Get("from")
+		to := msg.Header().Get("to")
+		subject := msg.Header().Get("subject")
 		fmt.Printf("%-7d|%-7d|%-10.10s|%-10.10s|%s\n", msg.SequenceNumber(), msg.UID(), from, to, subject)
 	}
 }

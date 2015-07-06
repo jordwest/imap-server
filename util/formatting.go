@@ -1,7 +1,10 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"net/textproto"
 	"strings"
 	"time"
 )
@@ -32,4 +35,29 @@ func SplitParams(params string) []string {
 		return false
 	})
 	return result
+}
+
+// WriteMIMEHeader writes the MIME header out in the standard format. This
+// should eventually be superseded by textproto.MIMEHeader.Write(w) once
+// it is implemented in the go standard library.
+func WriteMIMEHeader(writer io.Writer, header textproto.MIMEHeader) (n int, err error) {
+	for k, vv := range header {
+		for _, v := range vv {
+			bytes, err := fmt.Fprintf(writer, "%s: %s\r\n", k, v)
+			if err != nil {
+				return n, err
+			}
+			n += bytes
+		}
+	}
+	return n, nil
+}
+
+func MIMEHeaderToString(header textproto.MIMEHeader) string {
+	buf := &bytes.Buffer{}
+	_, err := WriteMIMEHeader(buf, header)
+	if err != nil {
+		panic(err)
+	}
+	return buf.String()
 }

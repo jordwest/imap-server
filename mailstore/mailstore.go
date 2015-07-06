@@ -1,6 +1,7 @@
 package mailstore
 
 import (
+	"net/textproto"
 	"time"
 
 	"github.com/jordwest/imap-server/types"
@@ -65,7 +66,7 @@ type Mailbox interface {
 type Message interface {
 	// Return the message's MIME headers as a map in format
 	// key: value
-	Header() types.MIMEHeader
+	Header() textproto.MIMEHeader
 
 	// Return the unique id of the email
 	UID() uint32

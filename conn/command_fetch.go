@@ -3,6 +3,7 @@ package conn
 import (
 	"errors"
 	"fmt"
+	"net/textproto"
 	"regexp"
 	"strings"
 
@@ -163,7 +164,7 @@ func fetchInternalDate(args []string, c *Conn, m mailstore.Message, peekOnly boo
 }
 
 func fetchHeaders(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
-	hdr := fmt.Sprintf("%s\r\n\r\n", m.Header())
+	hdr := fmt.Sprintf("%s\r\n", util.MIMEHeaderToString(m.Header()))
 	hdrLen := len(hdr)
 
 	peekStr := ""
@@ -180,16 +181,17 @@ func fetchHeaderSpecificFields(args []string, c *Conn, m mailstore.Message, peek
 	}
 	fields := strings.Split(args[1], " ")
 	hdrs := m.Header()
-	requestedHeaders := make(types.MIMEHeader)
+	requestedHeaders := make(textproto.MIMEHeader)
 	replyFieldList := make([]string, len(fields))
 	for i, key := range fields {
 		replyFieldList[i] = "\"" + key + "\""
 		// If the key exists in the headers, copy it over
-		if k, v, ok := hdrs.FindKey(key); ok {
-			requestedHeaders[k] = v
+		v := hdrs.Get(key)
+		if v != "" {
+			requestedHeaders.Add(key, v)
 		}
 	}
-	hdr := fmt.Sprintf("%s\r\n\r\n", requestedHeaders)
+	hdr := util.MIMEHeaderToString(requestedHeaders)
 	hdrLen := len(hdr)
 
 	return fmt.Sprintf("BODY[HEADER.FIELDS (%s)] {%d}\r\n%s",
@@ -208,7 +210,7 @@ func fetchBody(args []string, c *Conn, m mailstore.Message, peekOnly bool) strin
 }
 
 func fetchFullText(args []string, c *Conn, m mailstore.Message, peekOnly bool) string {
-	mail := fmt.Sprintf("%s\r\n\r\n%s\r\n", m.Header(), m.Body())
+	mail := fmt.Sprintf("%s\r\n%s\r\n", util.MIMEHeaderToString(m.Header()), m.Body())
 	mailLen := len(mail)
 
 	return fmt.Sprintf("BODY[] {%d}\r\n%s",
