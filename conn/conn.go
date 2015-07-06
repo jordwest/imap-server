@@ -147,6 +147,22 @@ func (c *Conn) ReadLine() (text string, ok bool) {
 	return c.RwcScanner.Text(), ok
 }
 
+// Reads data from the connection up to the length specified
+func (c *Conn) ReadFixedLength(length int) (data []byte, err error) {
+	// Read the whole message into a buffer
+	data = make([]byte, length)
+	receivedLength := 0
+	for receivedLength < length {
+		bytesRead, err := c.Rwc.Read(data[receivedLength:])
+		if err != nil {
+			return data, err
+		}
+		receivedLength += bytesRead
+	}
+
+	return data, nil
+}
+
 // Start tells the server to start communicating with the client (after
 // the connection has been opened)
 func (c *Conn) Start() error {

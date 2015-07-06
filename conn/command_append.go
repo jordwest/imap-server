@@ -1,7 +1,6 @@
 package conn
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/jordwest/imap-server/types"
@@ -39,36 +38,29 @@ func cmdAppend(args commandArgs, c *Conn) {
 		flags = types.FlagsFromString(flagString)
 	}
 
-	fmt.Printf("Flags: %s. Length: %d. Mailbox: %s\n", flags.String(), length, mailbox.Name())
-
 	// Tell client to send the mail message
 	c.writeResponse("+", "go ahead, feed me your message")
 
-	//msg := mailbox.NewMessage()
-	// Length of data received so far
-	receivedLength := uint64(0)
-	// First receive headers
-	body := false
-	for receivedLength < length {
-		line, ok := c.ReadLine()
-		if !ok {
-			return
-		}
-		lineLength := uint64(len(line + "\r\n"))
-		receivedLength += lineLength
+	// Read in the whole message
+	messageData, err := c.ReadFixedLength(int(length))
+	if err != nil {
+		return
+	}
 
-		// Blank line indicates end of headers, beginning of body
-		if line == "" && body == false {
-			body = true
-			continue
-		}
+	msg := mailbox.NewMessage()
+	rawMsg, err := types.MessageFromBytes(messageData)
+	if err != nil {
+		c.writeResponse(args.ID(), "NO "+err.Error())
+		return
+	}
+	msg = msg.SetHeaders(rawMsg.Headers)
+	msg = msg.SetBody(rawMsg.Body)
+	msg = msg.OverwriteFlags(flags)
 
-		if body == false {
-			fmt.Printf("Received header: %s\n", line)
-		} else {
-			fmt.Printf("Received body: %s\n", line)
-		}
-
+	msg, err = msg.Save()
+	if err != nil {
+		c.writeResponse(args.ID(), "NO "+err.Error())
+		return
 	}
 
 	c.writeResponse(args.ID(), "OK APPEND completed")
