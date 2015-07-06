@@ -31,8 +31,11 @@ type fetchParamDefinition struct {
 }
 
 func cmdFetch(args commandArgs, c *Conn) {
-	// Fetch the messages
+	if !c.assertSelected(args.ID(), ReadOnly) {
+		return
+	}
 
+	// Fetch the messages
 	seqSet, err := types.InterpretSequenceSet(args.Arg(fetchArgRange))
 	if err != nil {
 		c.writeResponse(args.ID(), "NO "+err.Error())
