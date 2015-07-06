@@ -44,6 +44,13 @@ func ExpectResponse(expected string) {
 	Expect(response, err).To(Equal(expected))
 }
 
+func ExpectResponsePattern(pattern string) {
+	response, err := reader.ReadLine()
+	pattern = strings.TrimSpace(pattern)
+	response = strings.TrimSpace(response)
+	Expect(response, err).To(MatchRegexp(pattern))
+}
+
 // === SETUP ====
 var _ = BeforeEach(func() {
 	mStore = mailstore.NewDummyMailstore()

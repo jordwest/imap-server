@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/jordwest/imap-server/conn"
 	"github.com/jordwest/imap-server/mailstore"
@@ -139,150 +140,12 @@ func TestStatus(t *testing.T) {
 	r.expect(t, "abcd.123 OK STATUS Completed")
 }
 
-func TestFetchFlagsUID(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (FLAGS UID)")
-	r.expect(t, "* 1 FETCH (FLAGS (\\Recent) UID 10)")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-
-	// Command case insensitivity
-	r.cConn.PrintfLine("abcd.124 fetch 1 (FLAGS)")
-	r.expect(t, "* 1 FETCH (FLAGS (\\Recent))")
-	r.expect(t, "abcd.124 OK FETCH Completed")
-}
-
-func TestFetchHeader(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER] {126}")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expect(t, "")
-	r.expect(t, ")")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-}
-
-func TestFetchSpecificHeaders(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER.FIELDS (From Subject)])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"From\" \"Subject\")] {40}")
-	r.expectPattern(t, "^((?i)(subject)|(from)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(from)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expect(t, ")")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-}
-
-func TestFetchPeekSpecificHeaders(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY.PEEK[HEADER.FIELDS (from Subject x-priority)])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"from\" \"Subject\" \"x-priority\")] {40}")
-	r.expectPattern(t, "^((?i)(subject)|(from)): [A-z0-9\\s@\\.]+$")
-	r.expectPattern(t, "^((?i)(subject)|(from)): [A-z0-9\\s@\\.]+$")
-	r.expect(t, ")")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-}
-
-func TestFetchInternalDate(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (INTERNALDATE)")
-	r.expect(t, "* 1 FETCH (INTERNALDATE \"28-Oct-2014 00:09:00 +0700\")")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-}
-
-func TestFetchRFC822Size(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (RFC822.SIZE)")
-	r.expect(t, "* 1 FETCH (RFC822.SIZE 154)")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-}
-
-func TestFetchBodyOnly(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[TEXT])")
-	r.expect(t, "* 1 FETCH (BODY[TEXT] {26}")
-	r.expect(t, "Test email")
-	r.expect(t, "Regards,")
-	r.expect(t, "Me")
-	r.expect(t, ")")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-}
-
-func TestFetchFullMessage(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[])")
-	r.expect(t, "* 1 FETCH (BODY[] {152}")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expect(t, "")
-	r.expect(t, "Test email")
-	r.expect(t, "Regards,")
-	r.expect(t, "Me")
-	r.expect(t, ")")
-	r.expect(t, "abcd.123 OK FETCH Completed")
-}
-
-func TestFetchFullMessageByUID(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	r.sConn.User = r.mailstore.User
-	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 UID FETCH 11 (BODY[])")
-	r.expect(t, "* 2 FETCH (BODY[] {154}")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expectPattern(t, "^((?i)(subject)|(message-id)|(to)|(from)|(date)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expect(t, "")
-	r.expect(t, "Another test email")
-	r.expect(t, " UID 11)")
-	r.expect(t, "abcd.123 OK UID FETCH Completed")
+func TestDataRace(t *testing.T) {
+	s := NewServer(mailstore.NewDummyMailstore())
+	s.Addr = "127.0.0.1:10143"
+	go func() {
+		s.ListenAndServe()
+	}()
+	time.Sleep(time.Millisecond)
+	s.Close()
 }
