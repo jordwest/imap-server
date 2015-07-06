@@ -183,10 +183,9 @@ func TestFetchSpecificHeaders(t *testing.T) {
 	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY[HEADER.FIELDS (From Subject)])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"From\" \"Subject\")] {42}")
+	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"From\" \"Subject\")] {40}")
 	r.expectPattern(t, "^((?i)(subject)|(from)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
 	r.expectPattern(t, "^((?i)(subject)|(from)): [<>A-z0-9\\s@\\.,\\:\\+]+$")
-	r.expect(t, "")
 	r.expect(t, ")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
@@ -199,10 +198,9 @@ func TestFetchPeekSpecificHeaders(t *testing.T) {
 	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (BODY.PEEK[HEADER.FIELDS (from Subject x-priority)])")
-	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"from\" \"Subject\" \"x-priority\")] {42}")
+	r.expect(t, "* 1 FETCH (BODY[HEADER.FIELDS (\"from\" \"Subject\" \"x-priority\")] {40}")
 	r.expectPattern(t, "^((?i)(subject)|(from)): [A-z0-9\\s@\\.]+$")
 	r.expectPattern(t, "^((?i)(subject)|(from)): [A-z0-9\\s@\\.]+$")
-	r.expect(t, "")
 	r.expect(t, ")")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
@@ -227,7 +225,7 @@ func TestFetchRFC822Size(t *testing.T) {
 	r.sConn.SelectedMailbox = r.mailstore.User.Mailboxes()[0]
 	go r.sConn.Start()
 	r.cConn.PrintfLine("abcd.123 FETCH 1 (RFC822.SIZE)")
-	r.expect(t, "* 1 FETCH (RFC822.SIZE 148)")
+	r.expect(t, "* 1 FETCH (RFC822.SIZE 154)")
 	r.expect(t, "abcd.123 OK FETCH Completed")
 }
 
