@@ -410,9 +410,29 @@ func (m DummyMessage) RemoveFlags(newFlags types.Flags) Message {
 	return m
 }
 
-func (m DummyMessage) Save() error {
-	m.mailstore.User.Mailboxes()[m.mailboxID].(DummyMailbox).messages[m.sequenceNumber-1] = m
-	return nil
+func (m DummyMessage) SetHeaders(newHeader textproto.MIMEHeader) Message {
+	m.header = newHeader
+	return m
+}
+
+func (m DummyMessage) SetBody(newBody string) Message {
+	m.body = newBody
+	return m
+}
+
+func (m DummyMessage) Save() (Message, error) {
+	mailbox := &(m.mailstore.User.mailboxes[m.mailboxID])
+	if m.sequenceNumber == 0 {
+		// Message is new
+		m.uid = mailbox.nextuid
+		mailbox.nextuid++
+		m.sequenceNumber = uint32(len(mailbox.messages))
+		mailbox.messages = append(mailbox.messages, m)
+	} else {
+		// Message exists
+		mailbox.messages[m.sequenceNumber-1] = m
+	}
+	return m, nil
 }
 
 func debugPrintMessages(messages []Message) {

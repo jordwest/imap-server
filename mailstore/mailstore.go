@@ -99,6 +99,12 @@ type Message interface {
 	// Write the flags for this message and return the updated message
 	RemoveFlags(types.Flags) Message
 
+	// Overwrite the message headers
+	SetHeaders(textproto.MIMEHeader) Message
+
+	// Overwrite the message body
+	SetBody(string) Message
+
 	// Save any changes to the message
-	Save() error
+	Save() (Message, error)
 }
