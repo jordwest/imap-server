@@ -28,6 +28,8 @@ var _ = Describe("APPEND Command", func() {
 			// Ensure that the email was indeed appended
 			mbox := tConn.User.Mailboxes()[0]
 			Expect(mbox.Messages()).To(Equal(uint32(4)))
+			Expect(mbox.NextUID()).To(Equal(uint32(14)))
+
 			msg := mbox.MessageByUID(13)
 			Expect(msg.Header().Get("From")).To(Equal("me@testing.com"))
 			Expect(msg.Header().Get("To")).To(Equal("you@testing.com"))
