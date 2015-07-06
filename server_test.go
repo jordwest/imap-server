@@ -26,7 +26,7 @@ func (r *rig) expect(t *testing.T, expected string) {
 		return
 	}
 	if line != expected {
-		t.Fatalf("Response did not match:\nExpected: %s\nActual:   %s", expected, line)
+		t.Fatalf("Response did not match:\nExpected: %s\nActual:	 %s", expected, line)
 		return
 	}
 }
@@ -44,7 +44,7 @@ func (r *rig) expectPattern(t *testing.T, pattern string) {
 		return
 	}
 	if re.MatchString(line) == false {
-		t.Fatalf("Response did not match pattern:\nExpected: %s\nActual:   %s", pattern, line)
+		t.Fatalf("Response did not match pattern:\nExpected: %s\nActual:	 %s", pattern, line)
 		return
 	}
 }
