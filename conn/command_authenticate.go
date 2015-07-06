@@ -2,7 +2,6 @@ package conn
 
 import (
 	"encoding/base64"
-	"fmt"
 	"regexp"
 )
 
@@ -26,7 +25,6 @@ func cmdAuthPlain(args commandArgs, c *Conn) {
 		c.writeResponse("", "BAD Invalid auth details")
 		return
 	}
-	fmt.Printf("Auth details received: %q\n", data)
 	match := loginRE.FindSubmatch(data)
 	if len(match) != 3 {
 		c.writeResponse(args.ID(), "NO Incorrect username/password")
