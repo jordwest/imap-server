@@ -72,6 +72,8 @@ func init() {
 	// STORE 2:4 -FLAGS (\Seen)          Mark messages as unseen
 	// STORE 2:4 FLAGS (\Seen \Deleted)  Replace flags
 	registerCommand("((?i)UID )?(?i:STORE) ("+sequenceSet+") ([\\+\\-])?(?i:FLAGS(\\.SILENT)?) \\(?([\\\\A-z0-9\\s]+)\\)?", cmdStoreFlags)
+
+	registerCommand("", cmdNA)
 }
 
 func registerCommand(matchExpr string, handleFunc func(commandArgs, *Conn)) error {
