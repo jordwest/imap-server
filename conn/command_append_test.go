@@ -26,9 +26,21 @@ var _ = Describe("APPEND Command", func() {
 			ExpectResponse("abcd.123 OK APPEND completed")
 
 			// Ensure that the email was indeed appended
-			msg := tConn.User.Mailboxes()[0].MessageByUID(13)
+			mbox := tConn.User.Mailboxes()[0]
+			Expect(mbox.Messages()).To(Equal(uint32(4)))
+			msg := mbox.MessageByUID(13)
 			Expect(msg.Header().Get("From")).To(Equal("me@testing.com"))
 			Expect(msg.Header().Get("To")).To(Equal("you@testing.com"))
+			Expect(msg.Header().Get("Subject")).To(Equal("This is a newly appended email"))
+
+			// Ensure no other emails were interfered with
+			msg = mbox.MessageBySequenceNumber(1)
+			Expect(msg.Header().Get("Subject")).To(Equal("Test email"))
+			msg = mbox.MessageBySequenceNumber(2)
+			Expect(msg.Header().Get("Subject")).To(Equal("Another test email"))
+			msg = mbox.MessageBySequenceNumber(3)
+			Expect(msg.Header().Get("Subject")).To(Equal("Last email"))
+			msg = mbox.MessageBySequenceNumber(4)
 			Expect(msg.Header().Get("Subject")).To(Equal("This is a newly appended email"))
 		})
 	})
