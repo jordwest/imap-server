@@ -27,7 +27,7 @@ func TestConn(t *testing.T) {
 }
 
 func SendLine(request string) {
-	fmt.Fprintf(mockConn.Client, "%s\n", request)
+	fmt.Fprintf(mockConn.Client, "%s\r\n", request)
 }
 
 func SendBase64(request string) {
