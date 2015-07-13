@@ -82,28 +82,6 @@ func TestWelcomeMessage(t *testing.T) {
 	r.expect(t, "* OK IMAP4rev1 Service Ready")
 }
 
-func TestListDirectorySeparator(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	go r.sConn.Start()
-	r.cConn.PrintfLine("abcd.123 LIST \"\" \"\"")
-	r.expect(t, "* LIST (\\Noselect) \"/\" \"\"")
-	r.expect(t, "abcd.123 OK LIST completed")
-}
-
-func TestListAllMailboxes(t *testing.T) {
-	r := setup(t)
-	defer r.cleanup()
-	r.sConn.SetState(conn.StateAuthenticated)
-	go r.sConn.Start()
-	r.sConn.User = r.mailstore.User
-	r.cConn.PrintfLine("abcd.123 LIST \"\" \"*\"")
-	r.expect(t, "* LIST () \"/\" \"INBOX\"")
-	r.expect(t, "* LIST () \"/\" \"Trash\"")
-	r.expect(t, "abcd.123 OK LIST completed")
-}
-
 func TestCapabilities(t *testing.T) {
 	r := setup(t)
 	defer r.cleanup()
