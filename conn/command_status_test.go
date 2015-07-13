@@ -12,7 +12,10 @@ var _ = Describe("STATUS Command", func() {
 			tConn.User = mStore.User
 		})
 
-		PIt("should (implement test)", func() {
+		It("should respond with the status of INBOX", func() {
+			SendLine("abcd.123 STATUS INBOX (UIDNEXT UNSEEN)")
+			ExpectResponse("* STATUS INBOX (UIDNEXT 13 UNSEEN 3)")
+			ExpectResponse("abcd.123 OK STATUS Completed")
 		})
 	})
 
@@ -22,6 +25,8 @@ var _ = Describe("STATUS Command", func() {
 		})
 
 		PIt("should give an error", func() {
+			SendLine("abcd.123 STATUS INBOX (UIDNEXT UNSEEN)")
+			ExpectResponse("abcd.123 BAD not authenticated")
 		})
 	})
 })

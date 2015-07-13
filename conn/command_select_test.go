@@ -12,7 +12,14 @@ var _ = Describe("SELECT Command", func() {
 			tConn.User = mStore.User
 		})
 
-		PIt("should (implement test)", func() {
+		It("should select the INBOX mailbox", func() {
+			SendLine("abcd.123 SELECT INBOX")
+			ExpectResponse("* 3 EXISTS")
+			ExpectResponse("* 3 RECENT")
+			ExpectResponse("* OK [UNSEEN 3]")
+			ExpectResponse("* OK [UIDNEXT 13]")
+			ExpectResponse("* OK [UIDVALIDITY 250]")
+			ExpectResponse("* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)")
 		})
 	})
 
@@ -22,6 +29,8 @@ var _ = Describe("SELECT Command", func() {
 		})
 
 		PIt("should give an error", func() {
+			SendLine("abcd.123 SELECT INBOX")
+			ExpectResponse("abcd.123 BAD not authenticated")
 		})
 	})
 })

@@ -6,22 +6,16 @@ import (
 )
 
 var _ = Describe("CAPABILITY Command", func() {
-	Context("When logged in", func() {
-		BeforeEach(func() {
-			tConn.SetState(conn.StateAuthenticated)
-			tConn.User = mStore.User
-		})
-
-		PIt("should (implement test)", func() {
-		})
-	})
-
 	Context("When not logged in", func() {
 		BeforeEach(func() {
 			tConn.SetState(conn.StateNotAuthenticated)
 		})
 
-		PIt("should give an error", func() {
+		It("should return server capabilities", func() {
+			SendLine("abcd.123 CAPABILITY")
+			ExpectResponse("* CAPABILITY IMAP4rev1 AUTH=PLAIN")
+			ExpectResponse("abcd.123 OK CAPABILITY completed")
 		})
 	})
+
 })
