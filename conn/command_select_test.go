@@ -28,7 +28,7 @@ var _ = Describe("SELECT Command", func() {
 			tConn.SetState(conn.StateNotAuthenticated)
 		})
 
-		PIt("should give an error", func() {
+		It("should give an error", func() {
 			SendLine("abcd.123 SELECT INBOX")
 			ExpectResponse("abcd.123 BAD not authenticated")
 		})

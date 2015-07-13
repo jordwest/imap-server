@@ -3,6 +3,10 @@ package conn
 import "fmt"
 
 func cmdSelect(args commandArgs, c *Conn) {
+	if !c.assertAuthenticated(args.ID()) {
+		return
+	}
+
 	var err error
 	c.SelectedMailbox, err = c.User.MailboxByName(args.Arg(0))
 	if err != nil {
