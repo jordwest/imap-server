@@ -3,6 +3,10 @@ package conn
 import "fmt"
 
 func cmdStatus(args commandArgs, c *Conn) {
+	if !c.assertAuthenticated(args.ID()) {
+		return
+	}
+
 	mailbox, err := c.User.MailboxByName(args.Arg(0))
 	if err != nil {
 		c.writeResponse(args.ID(), "NO "+err.Error())
