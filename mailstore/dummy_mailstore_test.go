@@ -1,6 +1,10 @@
 package mailstore
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/jordwest/imap-server/types"
+)
 
 func getDefaultInbox(t *testing.T) DummyMailbox {
 	m := NewDummyMailstore()
@@ -38,37 +42,37 @@ func assertMessageUIDs(t *testing.T, msgs []Message, uids []uint32) {
 
 func TestMessageSetBySequenceNumber(t *testing.T) {
 	inbox := getDefaultInbox(t)
-	msgs := inbox.MessageSetBySequenceNumber(SequenceSet{
-		SequenceRange{min: "1", max: ""},
-		SequenceRange{min: "4", max: "*"},
+	msgs := inbox.MessageSetBySequenceNumber(types.SequenceSet{
+		types.SequenceRange{Min: "1", Max: ""},
+		types.SequenceRange{Min: "4", Max: "*"},
 	})
 	assertMessageUIDs(t, msgs, []uint32{10})
 
-	msgs = inbox.MessageSetBySequenceNumber(SequenceSet{
-		SequenceRange{min: "2", max: "3"},
+	msgs = inbox.MessageSetBySequenceNumber(types.SequenceSet{
+		types.SequenceRange{Min: "2", Max: "3"},
 	})
 	assertMessageUIDs(t, msgs, []uint32{11, 12})
 }
 
 func TestMessageSetByUID(t *testing.T) {
 	inbox := getDefaultInbox(t)
-	msgs := inbox.MessageSetByUID(SequenceSet{
-		SequenceRange{min: "10", max: "*"},
+	msgs := inbox.MessageSetByUID(types.SequenceSet{
+		types.SequenceRange{Min: "10", Max: "*"},
 	})
 	assertMessageUIDs(t, msgs, []uint32{10, 11, 12})
 
-	msgs = inbox.MessageSetByUID(SequenceSet{
-		SequenceRange{min: "3", max: "9"},
+	msgs = inbox.MessageSetByUID(types.SequenceSet{
+		types.SequenceRange{Min: "3", Max: "9"},
 	})
 	assertMessageUIDs(t, msgs, []uint32{})
 
-	msgs = inbox.MessageSetByUID(SequenceSet{
-		SequenceRange{min: "11", max: "12"},
+	msgs = inbox.MessageSetByUID(types.SequenceSet{
+		types.SequenceRange{Min: "11", Max: "12"},
 	})
 	assertMessageUIDs(t, msgs, []uint32{11, 12})
 
-	msgs = inbox.MessageSetByUID(SequenceSet{
-		SequenceRange{min: "*", max: ""},
+	msgs = inbox.MessageSetByUID(types.SequenceSet{
+		types.SequenceRange{Min: "*", Max: ""},
 	})
 	assertMessageUIDs(t, msgs, []uint32{12})
 }

@@ -11,7 +11,7 @@ func TestSplitParams(t *testing.T) {
 		"FLAGS",
 	}
 	params := strings.Join(originalList, " ")
-	result := splitParams(params)
+	result := SplitParams(params)
 	for index, param := range originalList {
 		if result[index] != param {
 			t.Fatalf("Param %d does not match expected:\n"+
