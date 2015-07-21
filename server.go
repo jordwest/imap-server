@@ -1,7 +1,6 @@
 package imap
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,10 +11,16 @@ import (
 	"github.com/jordwest/imap-server/mailstore"
 )
 
-// Server represents an IMAP server instance
+const (
+	// defaultAddress is the default address that the IMAP server should listen
+	// on.
+	defaultAddress = ":143"
+)
+
+// Server represents an IMAP server instance.
 type Server struct {
 	Addr       string
-	listener   net.Listener
+	listeners  []net.Listener
 	Transcript io.Writer
 	mailstore  mailstore.Mailstore
 }
@@ -24,44 +29,32 @@ type Server struct {
 // You must called either Listen() followed by Serve() or call ListenAndServe()
 func NewServer(store mailstore.Mailstore) *Server {
 	s := &Server{
-		Addr:       ":143",
+		Addr:       defaultAddress,
 		mailstore:  store,
 		Transcript: ioutil.Discard,
 	}
 	return s
 }
 
-// ListenAndServe is shorthand for calling Listen() followed by Serve().
+// ListenAndServe is shorthand for calling Serve() with
 func (s *Server) ListenAndServe() (err error) {
-	err = s.Listen()
-	if err != nil {
-		return err
-	}
-	return s.Serve()
-}
-
-// Listen has the server begin listening for new connections.
-// This function is non-blocking.
-func (s *Server) Listen() error {
-	if s.listener != nil {
-		return errors.New("Listener already exists")
-	}
 	fmt.Fprintf(s.Transcript, "Listening on %s\n", s.Addr)
 	ln, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		fmt.Printf("Error listening: %s\n", err)
 		return err
 	}
-	s.listener = ln
-	return nil
+
+	return s.Serve(ln)
 }
 
-// Serve starts the server and spawns new goroutines to handle each client connection
-// as they come in. This function blocks.
-func (s *Server) Serve() error {
-	defer s.listener.Close()
+// Serve starts the server and spawns new goroutines to handle each client
+// connection as they come in. This function blocks.
+func (s *Server) Serve(l net.Listener) error {
+	fmt.Fprintf(s.Transcript, "Serving on %s\n", l.Addr().String())
+	defer l.Close()
 	for {
-		conn, err := s.listener.Accept()
+		conn, err := l.Accept()
 		if err != nil {
 			fmt.Errorf("Error accepting connection: %s\n", err)
 			return err
@@ -75,19 +68,6 @@ func (s *Server) Serve() error {
 
 		go c.Start()
 	}
-}
-
-// Close stops the server listening for all new connections
-func (s *Server) Close() (err error) {
-	fmt.Fprintf(s.Transcript, "Closing server listener\n")
-	if s.listener == nil {
-		return errors.New("Server not started")
-	}
-	err = s.listener.Close()
-	if err == nil {
-		s.listener = nil
-	}
-	return err
 }
 
 func (s *Server) newConn(netConn net.Conn) (c *conn.Conn, err error) {
@@ -106,7 +86,9 @@ func NewTestConnection(transcript io.Writer) (s *Server, clientConn *textproto.C
 	s = NewServer(mStore)
 	s.Addr = ":10143"
 	s.Transcript = transcript
-	if err = s.Listen(); err != nil {
+
+	l, err := net.Listen("tcp", s.Addr)
+	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
@@ -118,7 +100,7 @@ func NewTestConnection(transcript io.Writer) (s *Server, clientConn *textproto.C
 	textc := textproto.NewConn(c)
 	clientConn = textc
 
-	conn, err := s.listener.Accept()
+	conn, err := l.Accept()
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}

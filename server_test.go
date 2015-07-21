@@ -1,6 +1,7 @@
 package imap
 
 import (
+	"net"
 	"testing"
 	"time"
 
@@ -9,10 +10,15 @@ import (
 
 func TestDataRace(t *testing.T) {
 	s := NewServer(mailstore.NewDummyMailstore())
-	s.Addr = "127.0.0.1:10143"
+	addr := "127.0.0.1:10143"
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	go func() {
-		s.ListenAndServe()
+		s.Serve(l)
 	}()
 	time.Sleep(time.Millisecond)
-	s.Close()
+	l.Close()
 }
