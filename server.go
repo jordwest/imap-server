@@ -36,13 +36,13 @@ func NewServer(store mailstore.Mailstore) *Server {
 	return s
 }
 
-// ListenAndServe is shorthand for calling Serve() with
+// ListenAndServe is shorthand for calling Serve() with a listener listening
+// on the default port.
 func (s *Server) ListenAndServe() (err error) {
 	fmt.Fprintf(s.Transcript, "Listening on %s\n", s.Addr)
 	ln, err := net.Listen("tcp", s.Addr)
 	if err != nil {
-		fmt.Printf("Error listening: %s\n", err)
-		return err
+		return fmt.Errorf("Error listening: %s\n", err)
 	}
 
 	return s.Serve(ln)
@@ -56,8 +56,7 @@ func (s *Server) Serve(l net.Listener) error {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			fmt.Errorf("Error accepting connection: %s\n", err)
-			return err
+			return fmt.Errorf("Error accepting connection: %s\n", err)
 		}
 
 		fmt.Fprintf(s.Transcript, "Connection accepted\n")
