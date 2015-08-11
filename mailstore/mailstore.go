@@ -60,6 +60,11 @@ type Mailbox interface {
 	// NOTE: This should not make any changes to the mailbox until the
 	// message's `Save` method is called.
 	NewMessage() Message
+
+	// DeleteFlaggedMessages deletes messages marked with the Delete flag and
+	// returns them. It also updates the sequence numbers of all messages in the
+	// mailbox to account for the deleted messages.
+	DeleteFlaggedMessages() ([]Message, error)
 }
 
 // Message represents a standard email message

@@ -445,6 +445,38 @@ func (m *DummyMessage) Save() (Message, error) {
 	return m, nil
 }
 
+// DeleteFlaggedMessages deletes messages marked with the Delete flag and
+// returns them.
+func (m *DummyMailbox) DeleteFlaggedMessages() ([]Message, error) {
+	var delIDs []int
+	var delMsgs []Message
+
+	// Find messages to be deleted.
+	for i, msg := range m.messages {
+		if msg.Flags().HasFlags(types.FlagDeleted) {
+			delIDs = append(delIDs, i)
+			delMsgs = append(delMsgs, msg)
+		}
+	}
+
+	// Delete message from slice. Run this backward because otherwise it would
+	// fail if we have multiple items to remove.
+	for x := len(delIDs) - 1; x >= 0; x-- {
+		i := delIDs[x]
+		// From: https://github.com/golang/go/wiki/SliceTricks
+		m.messages, m.messages[len(m.messages)-1] = append(m.messages[:i],
+			m.messages[i+1:]...), nil
+	}
+
+	// Update sequence numbers.
+	for i, msg := range m.messages {
+		dmsg := msg.(*DummyMessage)
+		dmsg.sequenceNumber = uint32(i) + 1
+	}
+
+	return delMsgs, nil
+}
+
 func debugPrintMessages(messages []Message) {
 	fmt.Printf("SeqNo  |UID    |From      |To        |Subject\n")
 	fmt.Printf("-------+-------+----------+----------+-------\n")
