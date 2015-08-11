@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-// SequenceNumber represents a  single message identifier. Could be UID or sequence
-// number.
-// See RFC3501 section 9
+// SequenceNumber represents a  single message identifier. Could be UID or
+// sequence number.
+// See RFC3501 section 9.
 type SequenceNumber string
 
-// Last returns true if this sequence number indicates the *last* sequence number or UID
-// available in this mailbox
-// If false, this sequence number contains an integer value
+// Last returns true if this sequence number indicates the *last* sequence
+// number or UID available in this mailbox.
+// If false, this sequence number contains an integer value.
 func (s SequenceNumber) Last() bool {
 	if s == "*" {
 		return true
@@ -22,7 +22,7 @@ func (s SequenceNumber) Last() bool {
 	return false
 }
 
-// Nil returns true if no sequence number was specified
+// Nil returns true if no sequence number was specified.
 func (s SequenceNumber) Nil() bool {
 	if s == "" {
 		return true
@@ -30,13 +30,15 @@ func (s SequenceNumber) Nil() bool {
 	return false
 }
 
+// IsValue returns true if the sequence number is a numeral value and not nil
+// or *.
 func (s SequenceNumber) IsValue() bool {
 	return (!s.Nil() && !s.Last())
 }
 
 // Value returns the integer value of the sequence number, if any is set.
 // If Nil or Last is true (ie, this sequence number is not an integer value)
-// then this returns 0 and an error
+// then this returns 0 and an error.
 func (s SequenceNumber) Value() (uint32, error) {
 	if s.Last() {
 		return 0, fmt.Errorf("This sequence number indicates the last number in the mailbox and does not contain a value")
@@ -88,6 +90,8 @@ func init() {
 		"$")
 }
 
+// InterpretMessageRange creates a SequenceRange from the given string in the
+// IMAP format.
 func InterpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err error) {
 	result := rangeRegexp.FindStringSubmatch(imapMessageRange)
 	if len(result) == 0 {
@@ -119,6 +123,8 @@ func InterpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err
 	return SequenceRange{Min: first, Max: second}, nil
 }
 
+// InterpretSequenceSet creates a SequenceSet from the given string in the IMAP
+// format.
 func InterpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {
 	// Ensure the sequence set is valid
 	if !setRegexp.MatchString(imapSequenceSet) {

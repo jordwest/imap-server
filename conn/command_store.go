@@ -15,7 +15,7 @@ const storeArgSilent int = 3
 const storeArgFlags int = 4
 
 func cmdStoreFlags(args commandArgs, c *Conn) {
-	if !c.assertSelected(args.ID(), ReadWrite) {
+	if !c.assertSelected(args.ID(), readWrite) {
 		return
 	}
 

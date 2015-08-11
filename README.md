@@ -29,22 +29,22 @@ Supported Commands
 ------------------
 Command       | Planned  | Implemented  | Tests
 ------------- | -------  | -----------  | -----
-CAPABILITY    | ✓       | ✓           | ✗
-NOOP          | ✓       | ✓           | ✗
-LOGOUT        | ✓       | ✓           | ✗
-AUTHENTICATE  | ✗       | -            | -
+CAPABILITY    | ✓       | ✓           | ✓
+NOOP          | ✓       | ✗           | ✗
+LOGOUT        | ✓       | ✓           | ✓
+AUTHENTICATE  | ✓       | ✓            | ✗
 LOGIN         | ✓       | ✓           | ✗
 STARTTLS      | ✓       | ✗           | ✗
 EXAMINE       | ✓       | ✓           | ✗
-CREATE        | ✗       | -            | -
-DELETE        | ✗       | -            | -
-RENAME        | ✗       | -            | -
+CREATE        | ✓       | ✗            | ✗
+DELETE        | ✓       | ✗            | ✗
+RENAME        | ✓       | ✗            | ✗
 SUBSCRIBE     | ✗       | -            | -
 UNSUBSCRIBE   | ✗       | -            | -
 LIST          | ✓       | ✓           | ✓
 LSUB          | ✓       | ✓           | ✓
 STATUS        | ✓       | ✓           | ✓
-APPEND        | ✓       | ✗           | ✗
+APPEND        | ✓       | ✓           | ✓
 CHECK         | ?        | ✗           | ✗
 CLOSE         | ✓       | ✓           | ✗
 EXPUNGE       | ✓       | ✗           | ✗
@@ -52,4 +52,4 @@ SEARCH        | ✓       | ✗           | ✗
 FETCH         | ✓       | ✓           | ✓
 STORE         | ✓       | ✓           | ✓
 COPY          | ✓       | ✗           | ✗
-UID           | ✓       | ✓           | ✗
+UID           | ✓       | ✓           | ✓

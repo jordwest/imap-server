@@ -308,6 +308,7 @@ func (m DummyMailbox) MessageSetBySequenceNumber(set types.SequenceSet) []Messag
 
 }
 
+// NewMessage creates a new message in the dummy mailbox.
 func (m DummyMailbox) NewMessage() Message {
 	return DummyMessage{
 		sequenceNumber: 0,
@@ -345,7 +346,8 @@ func (m *DummyMailbox) addEmail(from string, to string, subject string, date tim
 	m.messages = append(m.messages, newMessage)
 }
 
-// DummyMessage is a representation of a single in-memory message in a DummyMailbox
+// DummyMessage is a representation of a single in-memory message in a
+// DummyMailbox.
 type DummyMessage struct {
 	sequenceNumber uint32
 	uid            uint32
@@ -357,18 +359,19 @@ type DummyMessage struct {
 	body           string
 }
 
-// Header returns the message's MIME Header
+// Header returns the message's MIME Header.
 func (m DummyMessage) Header() (hdr textproto.MIMEHeader) {
 	return m.header
 }
 
-// UID returns the message's unique identifier (UID)
+// UID returns the message's unique identifier (UID).
 func (m DummyMessage) UID() uint32 { return m.uid }
 
-// SequenceNumber returns the message's sequence number
+// SequenceNumber returns the message's sequence number.
 func (m DummyMessage) SequenceNumber() uint32 { return m.sequenceNumber }
 
-// Size returns the message's full RFC822 size, including full message header and body
+// Size returns the message's full RFC822 size, including full message header
+// and body.
 func (m DummyMessage) Size() uint32 {
 	hdrStr := fmt.Sprintf("%s\r\n", m.Header())
 	return uint32(len(hdrStr)) + uint32(len(m.Body()))
@@ -391,35 +394,42 @@ func (m DummyMessage) Keywords() []string {
 	return f
 }
 
+// Flags returns any flags on the message.
 func (m DummyMessage) Flags() types.Flags {
 	return m.flags
 }
 
+// OverwriteFlags replaces any flags on the message with those specified.
 func (m DummyMessage) OverwriteFlags(newFlags types.Flags) Message {
 	m.flags = newFlags
 	return m
 }
 
+// AddFlags adds the given flag to the message.
 func (m DummyMessage) AddFlags(newFlags types.Flags) Message {
 	m.flags = m.flags.SetFlags(newFlags)
 	return m
 }
 
+// RemoveFlags removes the given flag from the message.
 func (m DummyMessage) RemoveFlags(newFlags types.Flags) Message {
 	m.flags = m.flags.ResetFlags(newFlags)
 	return m
 }
 
+// SetHeaders sets the e-mail headers of the message.
 func (m DummyMessage) SetHeaders(newHeader textproto.MIMEHeader) Message {
 	m.header = newHeader
 	return m
 }
 
+// SetBody sets the body of the message.
 func (m DummyMessage) SetBody(newBody string) Message {
 	m.body = newBody
 	return m
 }
 
+// Save saves the message to the mailbox it belongs to.
 func (m DummyMessage) Save() (Message, error) {
 	mailbox := &(m.mailstore.User.mailboxes[m.mailboxID])
 	if m.sequenceNumber == 0 {

@@ -13,18 +13,30 @@ import (
 type connState int
 
 const (
+	// StateNew is the initial state of a client connection; before a welcome
+	// message is sent.
 	StateNew connState = iota
+
+	// StateNotAuthenticated is when a welcome message has been sent but hasn't
+	// yet authenticated.
 	StateNotAuthenticated
+
+	// StateAuthenticated is when a client has successfully authenticated but
+	// not yet selected a mailbox.
 	StateAuthenticated
+
+	// StateSelected is when a client has successfully selected a mailbox.
 	StateSelected
+
+	// StateLoggedOut is when a client has disconnected from the server.
 	StateLoggedOut
 )
 
-type WriteMode bool
+type writeMode bool
 
 const (
-	ReadOnly  WriteMode = false
-	ReadWrite           = true
+	readOnly  writeMode = false
+	readWrite           = true
 )
 
 const lineEnding string = "\r\n"
@@ -38,9 +50,12 @@ type Conn struct {
 	Mailstore       mailstore.Mailstore // Pointer to the IMAP server's mailstore to which this connection belongs
 	User            mailstore.User
 	SelectedMailbox mailstore.Mailbox
-	mailboxWritable WriteMode // True if write access is allowed to the currently selected mailbox
+	mailboxWritable writeMode // True if write access is allowed to the currently selected mailbox
 }
 
+// NewConn creates a new client connection. It's intended to be directly used
+// with a network connection. The transcript logs all client/server interactions
+// and is very useful while debugging.
 func NewConn(mailstore mailstore.Mailstore, netConn io.ReadWriteCloser, transcript io.Writer) (c *Conn) {
 	c = new(Conn)
 	c.Mailstore = mailstore
@@ -49,6 +64,8 @@ func NewConn(mailstore mailstore.Mailstore, netConn io.ReadWriteCloser, transcri
 	return c
 }
 
+// SetState sets the state that an IMAP client is in. It also resets any mailbox
+// write access.
 func (c *Conn) SetState(state connState) {
 	c.state = state
 
@@ -56,8 +73,12 @@ func (c *Conn) SetState(state connState) {
 	c.SetReadOnly()
 }
 
-func (c *Conn) SetReadOnly()  { c.mailboxWritable = ReadOnly }
-func (c *Conn) SetReadWrite() { c.mailboxWritable = ReadWrite }
+// SetReadOnly sets the client connection as read-only. It forbids any
+// operations that may modify data.
+func (c *Conn) SetReadOnly() { c.mailboxWritable = readOnly }
+
+// SetReadWrite sets the connection as read-write.
+func (c *Conn) SetReadWrite() { c.mailboxWritable = readWrite }
 
 func (c *Conn) handleRequest(req string) {
 	for _, cmd := range commands {
@@ -71,13 +92,14 @@ func (c *Conn) handleRequest(req string) {
 	c.writeResponse("", "BAD Command not understood")
 }
 
+// Write a response to the client. Implements io.Writer.
 func (c *Conn) Write(p []byte) (n int, err error) {
 	fmt.Fprintf(c.Transcript, "S: %s", p)
 
 	return c.Rwc.Write(p)
 }
 
-// Write a response to the client
+// Write a response to the client.
 func (c *Conn) writeResponse(seq string, command string) {
 	if seq == "" {
 		seq = "*"
@@ -89,7 +111,7 @@ func (c *Conn) writeResponse(seq string, command string) {
 	fmt.Fprintf(c, "%s %s", seq, command)
 }
 
-// Send the server greeting to the client
+// Send the server greeting to the client.
 func (c *Conn) sendWelcome() error {
 	if c.state != StateNew {
 		return errors.New("Welcome already sent")
@@ -112,7 +134,7 @@ func (c *Conn) assertAuthenticated(seq string) bool {
 	return true
 }
 
-func (c *Conn) assertSelected(seq string, writable WriteMode) bool {
+func (c *Conn) assertSelected(seq string, writable writeMode) bool {
 	// Ensure we are authenticated first
 	if !c.assertAuthenticated(seq) {
 		return false
@@ -127,7 +149,7 @@ func (c *Conn) assertSelected(seq string, writable WriteMode) bool {
 		panic("In selected state but no selected mailbox is set")
 	}
 
-	if writable == ReadWrite && c.mailboxWritable != ReadWrite {
+	if writable == readWrite && c.mailboxWritable != readWrite {
 		c.writeResponse(seq, "NO Selected mailbox is READONLY")
 		return false
 	}
@@ -135,19 +157,19 @@ func (c *Conn) assertSelected(seq string, writable WriteMode) bool {
 	return true
 }
 
-// Close forces the server to close the client's connection
+// Close forces the server to close the client's connection.
 func (c *Conn) Close() error {
 	fmt.Fprintf(c.Transcript, "Server closing connection\n")
 	return c.Rwc.Close()
 }
 
-// ReadLine awaits a single line from the client
+// ReadLine awaits a single line from the client.
 func (c *Conn) ReadLine() (text string, ok bool) {
 	ok = c.RwcScanner.Scan()
 	return c.RwcScanner.Text(), ok
 }
 
-// Reads data from the connection up to the length specified
+// ReadFixedLength reads data from the connection up to the specified length.
 func (c *Conn) ReadFixedLength(length int) (data []byte, err error) {
 	// Read the whole message into a buffer
 	data = make([]byte, length)
@@ -164,7 +186,7 @@ func (c *Conn) ReadFixedLength(length int) (data []byte, err error) {
 }
 
 // Start tells the server to start communicating with the client (after
-// the connection has been opened)
+// the connection has been opened).
 func (c *Conn) Start() error {
 	if c.Rwc == nil {
 		return errors.New("No connection exists")

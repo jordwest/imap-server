@@ -46,7 +46,7 @@ func init() {
 }
 
 func cmdFetch(args commandArgs, c *Conn) {
-	if !c.assertSelected(args.ID(), ReadOnly) {
+	if !c.assertSelected(args.ID(), readOnly) {
 		return
 	}
 
@@ -83,7 +83,7 @@ func cmdFetch(args commandArgs, c *Conn) {
 			return
 		}
 
-		if c.mailboxWritable == ReadWrite {
+		if c.mailboxWritable == readWrite {
 			msg = msg.RemoveFlags(types.FlagRecent)
 			msg, err = msg.Save()
 			if err != nil {

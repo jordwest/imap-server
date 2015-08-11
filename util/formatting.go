@@ -15,11 +15,13 @@ const RFC822Date = "Mon, 2 Jan 2006 15:04:05 +0700"
 // Date format used in INTERNALDATE fetch parameter
 const InternalDate = "02-Jan-2006 15:04:05 +0700"
 
+// FormatDate formats the given date in the RFC822 format.
 func FormatDate(date time.Time) string {
-	fmt.Printf("date: %s\n", date)
 	return date.Format(RFC822Date)
 }
 
+// SplitParams splits parameters in IMAP arguments so that they're easily
+// readable.
 func SplitParams(params string) []string {
 	paramsOpen := false
 	result := strings.FieldsFunc(params, func(r rune) bool {
@@ -53,6 +55,8 @@ func WriteMIMEHeader(writer io.Writer, header textproto.MIMEHeader) (n int, err 
 	return n, nil
 }
 
+// MIMEHeaderToString converts a textproto.MIMEHeader into its string
+// representation.
 func MIMEHeaderToString(header textproto.MIMEHeader) string {
 	buf := &bytes.Buffer{}
 	_, err := WriteMIMEHeader(buf, header)
