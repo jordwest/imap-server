@@ -16,7 +16,7 @@ import (
 	"testing"
 )
 
-var mStore mailstore.DummyMailstore
+var mStore *mailstore.DummyMailstore
 var tConn *conn.Conn
 var mockConn *mock_conn.Conn
 var reader *textproto.Reader

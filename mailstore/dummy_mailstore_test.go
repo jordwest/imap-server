@@ -6,7 +6,7 @@ import (
 	"github.com/jordwest/imap-server/types"
 )
 
-func getDefaultInbox(t *testing.T) DummyMailbox {
+func getDefaultInbox(t *testing.T) *DummyMailbox {
 	m := NewDummyMailstore()
 	user, err := m.Authenticate("username", "password")
 	if err != nil {
@@ -16,7 +16,7 @@ func getDefaultInbox(t *testing.T) DummyMailbox {
 	if err != nil {
 		t.Fatalf("Error getting default mailbox: %s\n", err)
 	}
-	return mailbox.(DummyMailbox)
+	return mailbox.(*DummyMailbox)
 }
 
 func assertMessageUIDs(t *testing.T, msgs []Message, uids []uint32) {
