@@ -74,6 +74,8 @@ func init() {
 	// STORE 2:4 FLAGS (\Seen \Deleted)  Replace flags
 	registerCommand("((?i)UID )?(?i:STORE) ("+sequenceSet+") ([\\+\\-])?(?i:FLAGS(\\.SILENT)?) \\(?([\\\\A-z0-9\\s]+)\\)?", cmdStoreFlags)
 
+	registerCommand("((?i)UID )?(?i:COPY) ("+sequenceSet+") \"?([A-z0-9]+)?\"?", cmdCopy)
+
 	registerCommand("", cmdNA)
 }
 
