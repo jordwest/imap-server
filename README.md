@@ -3,7 +3,7 @@
 Go IMAP Server
 ==============
 
-![Travis CI Build Status](https://travis-ci.org/jordwest/imap-server.svg)
+[![Travis CI Build Status](https://travis-ci.org/jordwest/imap-server.svg)](https://travis-ci.org/jordwest/imap-server)
 
 Barebones IMAP4rev1 server for golang. Designed for integration into a
 backend app to provide email client access.
