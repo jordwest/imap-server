@@ -128,7 +128,7 @@ func InterpretMessageRange(imapMessageRange string) (seqRange SequenceRange, err
 func InterpretSequenceSet(imapSequenceSet string) (seqSet SequenceSet, err error) {
 	// Ensure the sequence set is valid
 	if !setRegexp.MatchString(imapSequenceSet) {
-		return SequenceSet{}, errInvalidSequenceSetString(imapSequenceSet)
+		return nil, errInvalidSequenceSetString(imapSequenceSet)
 	}
 
 	ranges := strings.Split(imapSequenceSet, ",")

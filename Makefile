@@ -1,5 +1,4 @@
 test:
-	ginkgo
-	(cd conn && ginkgo)
+	ginkgo -r
 
 .PHONY: test
