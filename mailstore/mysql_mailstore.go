@@ -10,23 +10,45 @@ import (
 	"github.com/jordwest/imap-server/types"
 )
 
-// HasFlagsSQL returns a MySQL conditional for returning only results
-// which have a specified set of flags using bitwise operations
-func sqlHasFlags(flag types.Flags) string {
-	str := fmt.Sprintf("flags & %d = %d", flag, flag)
-	return str
-}
-
-func (m *MySQLMailbox) countMessagesWithFlags(flags types.Flags) uint32 {
+func (m MySQLMailbox) countMessagesWithFlags(flags types.Flags) uint32 {
 	count := uint32(0)
-	err := m.mailstore.Db.Get(&count, "SELECT COUNT(*) FROM mail_messages WHERE mailbox_id=? AND %s",
+	err := m.mailstore.Db.Get(&count,
+		`SELECT COUNT(*)
+		 FROM mail_messages
+		 WHERE mailbox_id=?
+			AND flags & ? = ?`,
 		m.ID,
-		sqlHasFlags(flags),
+		flags,
+		flags,
 	)
 	if err != nil {
 		panic(err)
 	}
 	return count
+}
+
+func (m MySQLMailbox) countMessagesWithoutFlags(flags types.Flags) uint32 {
+	count := uint32(0)
+	err := m.mailstore.Db.Get(&count,
+		`SELECT COUNT(*)
+		 FROM mail_messages
+		 WHERE mailbox_id=?
+			AND NOT flags & ? = ?`,
+		m.ID,
+		flags,
+		flags,
+	)
+	if err != nil {
+		panic(err)
+	}
+	return count
+}
+
+// Recalculate and write the sequence numbers to the database
+// This should be called whenever a message is deleted or created in the mailbox
+func (m MySQLMailstore) recalculateSequenceNumbers(mailboxID uint32, transaction sqlx.Tx) error {
+	fmt.Println("recalculateSequenceNumbers not implemented")
+	return nil
 }
 
 // MySQLMailstore is an in-memory mail storage for testing purposes and to
@@ -41,17 +63,19 @@ type MySQLMailstore struct {
 func NewMySQLMailstore(connectionString string) (*MySQLMailstore, error) {
 	db, err := sqlx.Connect("mysql", connectionString)
 	ms := &MySQLMailstore{
-		Db: db,
-		User: &MySQLUser{
-			mailstore:     ms,
-			authenticated: false,
-		},
+		Db:   db,
+		User: nil,
+	}
+
+	ms.User = &MySQLUser{
+		mailstore:     ms,
+		authenticated: false,
 	}
 	return ms, err
 }
 
 // Authenticate implements the Authenticate method on the Mailstore interface
-func (d *MySQLMailstore) Authenticate(username string, password string) (User, error) {
+func (d MySQLMailstore) Authenticate(username string, password string) (User, error) {
 	if username != "username" {
 		return &MySQLUser{}, errors.New("Invalid username. Use 'username'")
 	}
@@ -71,7 +95,7 @@ type MySQLUser struct {
 }
 
 // Mailboxes implements the Mailboxes method on the User interface
-func (u *MySQLUser) Mailboxes() []Mailbox {
+func (u MySQLUser) Mailboxes() []Mailbox {
 	result := []MySQLMailbox{}
 	err := u.mailstore.Db.Select(&result, "SELECT id, name FROM mail_mailboxes")
 	if err != nil {
@@ -86,83 +110,157 @@ func (u *MySQLUser) Mailboxes() []Mailbox {
 }
 
 // MailboxByName returns a MySQLMailbox object, given the mailbox's name
-func (u *MySQLUser) MailboxByName(name string) (Mailbox, error) {
-	for _, mailbox := range u.mailboxes {
-		if mailbox.Name() == name {
-			return mailbox, nil
-		}
+func (u MySQLUser) MailboxByName(name string) (Mailbox, error) {
+	result := MySQLMailbox{}
+	err := u.mailstore.Db.Get(&result,
+		`SELECT id, name
+		 FROM mail_mailboxes
+		 WHERE name=?`, name)
+
+	if err != nil {
+		return result, err
 	}
-	return nil, errors.New("Invalid mailbox")
+
+	if result.name == "" {
+		return nil, errors.New("Invalid mailbox")
+	}
+	return result, nil
 }
 
 // MySQLMailbox is an in-memory implementation of a Mailstore Mailbox
 type MySQLMailbox struct {
-	ID        uint64 `db:"id"`
+	ID        uint32 `db:"id"`
 	name      string `db:"name"`
 	nextuid   uint32 `db:"next_uid"`
 	mailstore *MySQLMailstore
 }
 
-// DebugPrintMailbox prints out all messages in the mailbox to the command line
-// for debugging purposes
-func (m *MySQLMailbox) DebugPrintMailbox() {
-	debugPrintMessages(m.messages)
-}
-
 // Name returns the Mailbox's name
-func (m *MySQLMailbox) Name() string { return m.name }
+func (m MySQLMailbox) Name() string { return m.name }
 
 // NextUID returns the UID that is likely to be assigned to the next
 // new message in the Mailbox
-func (m *MySQLMailbox) NextUID() uint32 { return m.nextuid }
+func (m MySQLMailbox) NextUID() uint32 { return m.nextuid }
 
 // LastUID returns the UID of the last message in the mailbox or if the
 // mailbox is empty, the next expected UID
-func (m *MySQLMailbox) LastUID() uint32 {
+func (m MySQLMailbox) LastUID() uint32 {
 	// TODO
 	return 0
 }
 
 // Recent returns the number of messages in the mailbox which are currently
 // marked with the 'Recent' flag
-func (m *MySQLMailbox) Recent() uint32 {
+func (m MySQLMailbox) Recent() uint32 {
 	return m.countMessagesWithFlags(types.FlagRecent)
 }
 
 // Messages returns the total number of messages in the Mailbox
-func (m *MySQLMailbox) Messages() uint32 {
+func (m MySQLMailbox) Messages() uint32 {
 	return m.countMessagesWithFlags(0)
 }
 
 // Unseen returns the number of messages in the mailbox which are currently
 // marked with the 'Unseen' flag
-func (m *MySQLMailbox) Unseen() uint32 {
-	return m.countMessagesWithFlags(types.FlagSeen)
+func (m MySQLMailbox) Unseen() uint32 {
+	return m.countMessagesWithoutFlags(types.FlagSeen)
 }
 
 // MessageBySequenceNumber returns a single message given the message's sequence number
-func (m *MySQLMailbox) MessageBySequenceNumber(seqno uint32) Message {
-	if seqno > uint32(len(m.messages)) {
-		return nil
-	}
-	return m.messages[seqno-1]
+func (m MySQLMailbox) MessageBySequenceNumber(seqno uint32) Message {
+	return m.messageByColumn("sequence_number", seqno)
 }
 
 // MessageByUID returns a single message given the message's sequence number
-func (m *MySQLMailbox) MessageByUID(uidno uint32) Message {
-	for _, message := range m.messages {
-		if message.UID() == uidno {
-			return message
-		}
+func (m MySQLMailbox) MessageByUID(uidno uint32) Message {
+	return m.messageByColumn("uid", uidno)
+}
+
+func (m MySQLMailbox) messageByColumn(column string, value uint32) Message {
+	message := MySQLMessage{}
+	m.mailstore.Db.Get(&message,
+		`SELECT *
+		 FROM mail_messages
+		 WHERE mailbox_id=?
+			AND ?=?`,
+		m.ID, column, value)
+
+	message.mailstore = m.mailstore
+
+	return message
+}
+
+func (m MySQLMailbox) messageRangeByColumn(column string, seqRange types.SequenceRange) []Message {
+	msgs := make([]Message, 0)
+	// If Min is "*", meaning the last UID in the mailbox, Max should
+	// always be Nil
+	if seqRange.Min.Last() {
+		// Return the last message in the mailbox
+		msg := MySQLMessage{}
+		m.mailstore.Db.Get(&msg,
+			`SELECT *
+			 FROM mail_messages
+			 WHERE mailbox_id=?
+			 LIMIT 1
+			 ORDER BY ? DESC`,
+			m.ID, column,
+		)
+		msgs = append(msgs, msg)
+		return msgs
 	}
 
-	// No message found
-	return nil
+	min, err := seqRange.Min.Value()
+	if err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return msgs
+	}
+
+	// If no Max is specified, the sequence number must be fixed
+	if seqRange.Max.Nil() {
+		var uid uint32
+		// Fetch specific message by sequence number
+		uid, err = seqRange.Min.Value()
+		msg := m.MessageByUID(uid)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return msgs
+		}
+		if msg != nil {
+			msgs = append(msgs, msg)
+		}
+		return msgs
+	}
+
+	max, err := seqRange.Max.Value()
+	if seqRange.Max.Last() {
+		err = m.mailstore.Db.Select(&msgs,
+			`SELECT *
+			 FROM mail_messages
+			 WHERE mailbox_id=?
+				AND ? >= ?
+			 ORDER BY ? DESC`,
+			m.ID, column, min, column,
+		)
+	} else {
+		err = m.mailstore.Db.Select(&msgs,
+			`SELECT *
+			 FROM mail_messages
+			 WHERE mailbox_id=?
+				AND ? >= ? AND ? <= ?
+			 ORDER BY ? DESC`,
+			m.ID,
+			column, min,
+			column, max,
+			column,
+		)
+	}
+
+	return msgs
 }
 
 // MessageSetByUID returns a slice of messages given a set of UID ranges.
 // eg 1,5,9,28:140,190:*
-func (m *MySQLMailbox) MessageSetByUID(set types.SequenceSet) []Message {
+func (m MySQLMailbox) MessageSetByUID(set types.SequenceSet) []Message {
 	var msgs []Message
 
 	// If the mailbox is empty, return empty array
@@ -171,57 +269,7 @@ func (m *MySQLMailbox) MessageSetByUID(set types.SequenceSet) []Message {
 	}
 
 	for _, msgRange := range set {
-		// If Min is "*", meaning the last UID in the mailbox, Max should
-		// always be Nil
-		if msgRange.Min.Last() {
-			// Return the last message in the mailbox
-			msgs = append(msgs, m.MessageByUID(m.LastUID()))
-			continue
-		}
-
-		start, err := msgRange.Min.Value()
-		if err != nil {
-			fmt.Printf("Error: %s\n", err.Error())
-			return msgs
-		}
-
-		// If no Max is specified, the sequence number must be either a fixed
-		// sequence number or
-		if msgRange.Max.Nil() {
-			var uid uint32
-			// Fetch specific message by sequence number
-			uid, err = msgRange.Min.Value()
-			msg := m.MessageByUID(uid)
-			if err != nil {
-				fmt.Printf("Error: %s\n", err.Error())
-				return msgs
-			}
-			if msg != nil {
-				msgs = append(msgs, msg)
-			}
-			continue
-		}
-
-		var end uint32
-		if msgRange.Max.Last() {
-			end = m.LastUID()
-		} else {
-			end, err = msgRange.Max.Value()
-		}
-
-		// Note this is very inefficient when
-		// the message array is large. A proper
-		// storage system using eg SQL might
-		// instead perform a query here using
-		// the range values instead.
-		for _, msg := range m.messages {
-			uid := msg.UID()
-			if uid >= start && uid <= end {
-				msgs = append(msgs, msg)
-			}
-		}
-		for index := uint32(start); index <= end; index++ {
-		}
+		msgs = append(msgs, m.messageRangeByColumn("uid", msgRange)...)
 	}
 
 	return msgs
@@ -229,7 +277,7 @@ func (m *MySQLMailbox) MessageSetByUID(set types.SequenceSet) []Message {
 
 // MessageSetBySequenceNumber returns a slice of messages given a set of
 // sequence number ranges
-func (m *MySQLMailbox) MessageSetBySequenceNumber(set types.SequenceSet) []Message {
+func (m MySQLMailbox) MessageSetBySequenceNumber(set types.SequenceSet) []Message {
 	var msgs []Message
 
 	// If the mailbox is empty, return empty array
@@ -239,59 +287,14 @@ func (m *MySQLMailbox) MessageSetBySequenceNumber(set types.SequenceSet) []Messa
 
 	// For each sequence range in the sequence set
 	for _, msgRange := range set {
-		// If Min is "*", meaning the last message in the mailbox, Max should
-		// always be Nil
-		if msgRange.Min.Last() {
-			// Return the last message in the mailbox
-			msgs = append(msgs, m.MessageBySequenceNumber(m.Messages()))
-			continue
-		}
-
-		start, err := msgRange.Min.Value()
-		if err != nil {
-			fmt.Printf("Error: %s\n", err.Error())
-			return msgs
-		}
-
-		// If no Max is specified, the sequence number must be either a fixed
-		// sequence number or
-		if msgRange.Max.Nil() {
-			var sequenceNo uint32
-			// Fetch specific message by sequence number
-			sequenceNo, err = msgRange.Min.Value()
-			if err != nil {
-				fmt.Printf("Error: %s\n", err.Error())
-				return msgs
-			}
-			msg := m.MessageBySequenceNumber(sequenceNo)
-			if msg != nil {
-				msgs = append(msgs, msg)
-			}
-			continue
-		}
-
-		var end uint32
-		if msgRange.Max.Last() {
-			end = uint32(len(m.messages))
-		} else {
-			end, err = msgRange.Max.Value()
-		}
-
-		// Note this is very inefficient when
-		// the message array is large. A proper
-		// storage system using eg SQL might
-		// instead perform a query here using
-		// the range values instead.
-		for seqNo := start; seqNo <= end; seqNo++ {
-			msgs = append(msgs, m.MessageBySequenceNumber(seqNo))
-		}
+		msgs = append(msgs, m.messageRangeByColumn("sequence_number", msgRange)...)
 	}
 	return msgs
 
 }
 
 // NewMessage creates a new message in the dummy mailbox.
-func (m *MySQLMailbox) NewMessage() Message {
+func (m MySQLMailbox) NewMessage() Message {
 	return &MySQLMessage{
 		sequenceNumber: 0,
 		uid:            0,
@@ -318,119 +321,119 @@ type MySQLMessage struct {
 }
 
 // Header returns the message's MIME Header.
-func (m *MySQLMessage) Header() (hdr textproto.MIMEHeader) {
+func (m MySQLMessage) Header() (hdr textproto.MIMEHeader) {
 	return m.header
 }
 
 // UID returns the message's unique identifier (UID).
-func (m *MySQLMessage) UID() uint32 { return m.uid }
+func (m MySQLMessage) UID() uint32 { return m.uid }
 
 // SequenceNumber returns the message's sequence number.
-func (m *MySQLMessage) SequenceNumber() uint32 { return m.sequenceNumber }
+func (m MySQLMessage) SequenceNumber() uint32 { return m.sequenceNumber }
 
 // Size returns the message's full RFC822 size, including full message header
 // and body.
-func (m *MySQLMessage) Size() uint32 {
+func (m MySQLMessage) Size() uint32 {
 	hdrStr := fmt.Sprintf("%s\r\n", m.Header())
 	return uint32(len(hdrStr)) + uint32(len(m.Body()))
 }
 
 // InternalDate returns the internally stored date of the message
-func (m *MySQLMessage) InternalDate() time.Time {
+func (m MySQLMessage) InternalDate() time.Time {
 	return m.internalDate
 }
 
 // Body returns the full body of the message
-func (m *MySQLMessage) Body() string {
+func (m MySQLMessage) Body() string {
 	return m.body
 }
 
 // Keywords returns any keywords associated with the message
-func (m *MySQLMessage) Keywords() []string {
+func (m MySQLMessage) Keywords() []string {
 	var f []string
 	//f[0] = "Test"
 	return f
 }
 
 // Flags returns any flags on the message.
-func (m *MySQLMessage) Flags() types.Flags {
+func (m MySQLMessage) Flags() types.Flags {
 	return m.flags
 }
 
 // OverwriteFlags replaces any flags on the message with those specified.
-func (m *MySQLMessage) OverwriteFlags(newFlags types.Flags) Message {
+func (m MySQLMessage) OverwriteFlags(newFlags types.Flags) Message {
 	m.flags = newFlags
 	return m
 }
 
 // AddFlags adds the given flag to the message.
-func (m *MySQLMessage) AddFlags(newFlags types.Flags) Message {
+func (m MySQLMessage) AddFlags(newFlags types.Flags) Message {
 	m.flags = m.flags.SetFlags(newFlags)
 	return m
 }
 
 // RemoveFlags removes the given flag from the message.
-func (m *MySQLMessage) RemoveFlags(newFlags types.Flags) Message {
+func (m MySQLMessage) RemoveFlags(newFlags types.Flags) Message {
 	m.flags = m.flags.ResetFlags(newFlags)
 	return m
 }
 
 // SetHeaders sets the e-mail headers of the message.
-func (m *MySQLMessage) SetHeaders(newHeader textproto.MIMEHeader) Message {
+func (m MySQLMessage) SetHeaders(newHeader textproto.MIMEHeader) Message {
 	m.header = newHeader
 	return m
 }
 
 // SetBody sets the body of the message.
-func (m *MySQLMessage) SetBody(newBody string) Message {
+func (m MySQLMessage) SetBody(newBody string) Message {
 	m.body = newBody
 	return m
 }
 
 // Save saves the message to the mailbox it belongs to.
-func (m *MySQLMessage) Save() (Message, error) {
-	mailbox := m.mailstore.User.mailboxes[m.mailboxID]
+func (m MySQLMessage) Save() (Message, error) {
+	subject := m.Header().Get("subject")
 	if m.sequenceNumber == 0 {
-		// Message is new
-		m.uid = mailbox.nextuid
-		mailbox.nextuid++
-		m.sequenceNumber = uint32(len(mailbox.messages))
-		mailbox.messages = append(mailbox.messages, m)
+		nextUID := 8498489
+		_, err := m.mailstore.Db.Exec(
+			`INSERT INTO mail_messages
+			 (uid, mailbox_id, date, flags, subject, header, body)
+			 VALUES
+			 (?, ?, ?, ?, ?, ?, ?)`,
+			nextUID, m.mailboxID, m.internalDate, m.flags,
+			subject, m.header, m.body,
+		)
+		if err != nil {
+			return m, err
+		}
+		nextUID++
 	} else {
 		// Message exists
-		mailbox.messages[m.sequenceNumber-1] = m
+		_, err := m.mailstore.Db.Exec(
+			`UPDATE mail_messages
+			 SET date=?, flags=?, subject=?, header=?, body=?`,
+			m.internalDate, m.flags,
+			subject, m.header, m.body,
+		)
+		if err != nil {
+			return m, err
+		}
 	}
 	return m, nil
 }
 
 // DeleteFlaggedMessages deletes messages marked with the Delete flag and
 // returns them.
-func (m *MySQLMailbox) DeleteFlaggedMessages() ([]Message, error) {
-	var delIDs []int
+func (m MySQLMailbox) DeleteFlaggedMessages() ([]Message, error) {
 	var delMsgs []Message
 
-	// Find messages to be deleted.
-	for i, msg := range m.messages {
-		if msg.Flags().HasFlags(types.FlagDeleted) {
-			delIDs = append(delIDs, i)
-			delMsgs = append(delMsgs, msg)
-		}
-	}
+	_, err := m.mailstore.Db.Exec(
+		`DELETE FROM mail_messages WHERE mailbox_id=?
+			AND flags & ? = ?`,
+		m.ID,
+		types.FlagDeleted,
+		types.FlagDeleted,
+	)
 
-	// Delete message from slice. Run this backward because otherwise it would
-	// fail if we have multiple items to remove.
-	for x := len(delIDs) - 1; x >= 0; x-- {
-		i := delIDs[x]
-		// From: https://github.com/golang/go/wiki/SliceTricks
-		m.messages, m.messages[len(m.messages)-1] = append(m.messages[:i],
-			m.messages[i+1:]...), nil
-	}
-
-	// Update sequence numbers.
-	for i, msg := range m.messages {
-		dmsg := msg.(*MySQLMessage)
-		dmsg.sequenceNumber = uint32(i) + 1
-	}
-
-	return delMsgs, nil
+	return delMsgs, err
 }

@@ -5,6 +5,7 @@ USE imapserver;
 
 CREATE TABLE mail_messages (
 	`id` BIGINT UNSIGNED PRIMARY KEY auto_increment,
+	`sequence_number` INT UNSIGNED,
 	`uid` INT UNSIGNED,
 	`mailbox_id` BIGINT UNSIGNED NOT NULL,
 	`date` DATE NOT NULL,
