@@ -3,7 +3,6 @@ package conn
 import (
 	"crypto/tls"
 	"bufio"
-	"log"
 	"net"
 )
 

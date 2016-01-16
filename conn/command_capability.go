@@ -2,6 +2,10 @@ package conn
 
 // Handles a CAPABILITY command
 func cmdCapability(args commandArgs, c *Conn) {
-	c.writeResponse("", "CAPABILITY IMAP4rev1 AUTH=PLAIN")
+	if c.StartTLSConfig == nil {
+		c.writeResponse("", "CAPABILITY IMAP4rev1 AUTH=PLAIN")
+	} else {
+		c.writeResponse("", "CAPABILITY IMAP4rev1 AUTH=PLAIN STARTTLS")
+	}
 	c.writeResponse(args.ID(), "OK CAPABILITY completed")
 }
