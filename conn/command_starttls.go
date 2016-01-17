@@ -1,8 +1,8 @@
 package conn
 
 import (
-	"crypto/tls"
 	"bufio"
+	"crypto/tls"
 	"net"
 )
 
@@ -24,7 +24,8 @@ func cmdStartTLS(args commandArgs, c *Conn) {
 	}
 
 	c.writeResponse(args.ID(), "OK STARTTLS starting.")
-	c.Rwc = tls.Server(RwcAsConn, c.StartTLSConfig)
+	tlsServer := tls.Server(RwcAsConn, c.StartTLSConfig)
+	c.Rwc = tlsServer
 	c.RwcScanner = bufio.NewScanner(c.Rwc)
 	c.Secure = true
 }
