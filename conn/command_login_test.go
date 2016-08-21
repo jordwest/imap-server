@@ -5,14 +5,20 @@ import (
 	. "github.com/onsi/ginkgo"
 )
 
-var _ = Describe("LSUB Command", func() {
+var _ = Describe("LOGIN Command", func() {
+
 	Context("When logged in", func() {
 		BeforeEach(func() {
 			tConn.SetState(conn.StateAuthenticated)
 			tConn.User = mStore.User
 		})
-
-		PIt("should (implement test)", func() {
+		It("should return Authenticated", func() {
+			SendLine(`abcd.123 login "username" "password"`)
+			ExpectResponse("abcd.123 OK Authenticated")
+		})
+		It("should return incorrect user/pw", func() {
+			SendLine(`abcd.123 login "username" "foo"`)
+			ExpectResponse("abcd.123 NO Incorrect username/password")
 		})
 	})
 
@@ -20,8 +26,13 @@ var _ = Describe("LSUB Command", func() {
 		BeforeEach(func() {
 			tConn.SetState(conn.StateNotAuthenticated)
 		})
-
-		PIt("should give an error", func() {
+		It("should return Authenticated", func() {
+			SendLine(`abcd.123 login "username" "password"`)
+			ExpectResponse("abcd.123 OK Authenticated")
+		})
+		It("should return incorrect user/pw", func() {
+			SendLine(`abcd.123 login "username" "foo"`)
+			ExpectResponse("abcd.123 NO Incorrect username/password")
 		})
 	})
 })
