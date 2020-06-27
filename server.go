@@ -1,6 +1,7 @@
 package imap
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,10 +20,11 @@ const (
 
 // Server represents an IMAP server instance.
 type Server struct {
-	Addr       string
-	listeners  []net.Listener
-	Transcript io.Writer
-	mailstore  mailstore.Mailstore
+	Addr           string
+	listeners      []net.Listener
+	Transcript     io.Writer
+	mailstore      mailstore.Mailstore
+	StartTLSConfig *tls.Config // If set to non-nil, STARTTLS becomes enabled.
 }
 
 // NewServer initialises a new Server. Note that this does not start the server.
@@ -72,6 +74,7 @@ func (s *Server) Serve(l net.Listener) error {
 func (s *Server) newConn(netConn net.Conn) (c *conn.Conn, err error) {
 	c = conn.NewConn(s.mailstore, netConn, s.Transcript)
 	c.SetState(conn.StateNew)
+	c.StartTLSConfig = s.StartTLSConfig
 	return c, nil
 }
 

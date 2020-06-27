@@ -2,6 +2,7 @@ package conn
 
 import (
 	"bufio"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -51,6 +52,8 @@ type Conn struct {
 	User            mailstore.User
 	SelectedMailbox mailstore.Mailbox
 	mailboxWritable writeMode // True if write access is allowed to the currently selected mailbox
+	StartTLSConfig  *tls.Config //TLS configuration used for STARTTLS
+	Secure          bool // True if the connection is secure
 }
 
 // NewConn creates a new client connection. It's intended to be directly used

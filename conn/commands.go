@@ -52,6 +52,7 @@ func init() {
 
 	registerCommand("(?i:CAPABILITY)", cmdCapability)
 	registerCommand("(?i:LOGIN) \"([A-z0-9]+)\" \"([A-z0-9]+)\"", cmdLogin)
+	registerCommand("(?i:STARTTLS)", cmdStartTLS)
 	registerCommand("(?i:AUTHENTICATE PLAIN)", cmdAuthPlain)
 	registerCommand("(?i:LIST) \"?([A-z0-9]+)?\"? \"?([A-z0-9*]+)?\"?", cmdList)
 	registerCommand("(?i:LSUB)", cmdLSub)
