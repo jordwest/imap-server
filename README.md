@@ -1,5 +1,12 @@
 ![go-IMAP Logo](https://raw.githubusercontent.com/jordwest/imap-server/master/assets/logo.png)
 
+# This project is no longer active
+
+Check out this much more active and mature project instead:
+
+https://github.com/emersion/go-imap
+
+
 Go IMAP Server
 ==============
 
